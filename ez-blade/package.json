@@ -24,6 +24,10 @@
     "passport-openid": "^0.4.0",
     "passport-steam": "^1.0.18",
     "session": "^0.1.0",
+    "socket.io": "^4.7.5",
+    "steam-tradeoffer-manager": "^2.11.5",
+    "steam-user": "^5.2.0",
+    "steamcommunity": "^3.48.3",
     "stripe": "^16.5.0"
   }
 }

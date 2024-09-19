@@ -11,6 +11,7 @@ const User = require('./models/userSchema');
 const Item = require('./models/itemSchema')
 const { getInventory } = require('./utils/getInventory')
 const jackpotRoutes = require('./routes/jackpotRoutes');
+const Jackpot = require('./models/jackpotSchema')
 
 // Initialize the app
 const app = express();
@@ -60,30 +61,130 @@ passport.use(new SteamStrategy({
 
 
 // Inventory Route
+// app.get('/api/inventory', async (req, res) => {
+//   try {
+//     const steamID64 = req.query.steamID64;
+//     const appId = parseInt(req.query.appId, 10) || 252490;
+//     const contextId = parseInt(req.query.contextId, 10) || 2;
+//     console.log("check1");
+    
+
+//     if (!steamID64) {
+//       return res.status(400).json({ error: 'Missing SteamID64 parameter.' });
+//     }
+
+//     const inventory = await getInventory(appId, steamID64, contextId);
+
+//     // Find the user in the database
+//     const user = await User.findOne({ steamId: steamID64 });
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found.' });
+//     }
+//     // Save each item in the inventory to the database
+//     const itemPromises = inventory.items.map(async (item) => {
+//       try {
+//         // Extract the numeric part from the price string and convert it to a number
+//         const priceString = item.price; 
+//         const priceMatch = priceString.match(/\d+(\.\d+)?/);
+//         const price = priceMatch ? parseFloat(priceMatch[0]) : 0;
+
+//         // Check if any of the asset IDs already exists in the database
+//         const existingItem = await Item.findOne({
+//           owner: user._id,
+//           appId: appId,
+//           contextId: contextId,
+//           assetId: { $in: item.assetIds }
+//         });
+
+//         if (existingItem) {
+//           // Item already exists in the inventory, update if needed
+//           return existingItem;
+//         }
+
+//         // Create a new item entry for each asset ID
+//         const newItemPromises = item.assetIds.map(async (assetId) => {
+//           const newItem = new Item({
+//             name: item.market_hash_name,
+//             iconUrl: item.icon_url,
+//             price: `${price} USD`,  // Save the numeric value
+//             owner: user._id,
+//             assetId: assetId,
+//             appId: appId,
+//             contextId: contextId,
+//             // quantity: item.quantity
+//           });
+
+//           const savedItem = await newItem.save();
+//           user.inventory.push(savedItem._id); // Add item reference to user's inventory
+//           return savedItem;
+//         });
+
+//         return Promise.all(newItemPromises);
+
+//       } catch (itemError) {
+//         // Handle errors
+//         console.error(`Error processing item ${item.market_hash_name}`, itemError);
+//         throw itemError;
+//       }
+//     });
+
+//     // Wait for all items to be saved
+//     await Promise.all(itemPromises);
+
+//     // Save the updated user with inventory references
+//     await user.save();
+//     const userInventory = await User.findOne({steamId: steamID64}).populate('inventory')
+    
+//     // console.log(userInventory.inventory.length);
+//     // console.log(typeof(userInventory.inventory), typeof(inventory));
+//     // console.log(typeof(userInventory.inventory[0].iconUrl),typeof(inventory.items[0].icon_url));
+    
+
+//     res.json({items:userInventory.inventory, inv:inventory});
+
+//   } catch (error) {
+//     console.error("Error in /api/inventory:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 app.get('/api/inventory', async (req, res) => {
   try {
     const steamID64 = req.query.steamID64;
     const appId = parseInt(req.query.appId, 10) || 252490;
     const contextId = parseInt(req.query.contextId, 10) || 2;
-    console.log("check1");
-    
 
     if (!steamID64) {
       return res.status(400).json({ error: 'Missing SteamID64 parameter.' });
     }
 
+    // Fetch the inventory
     const inventory = await getInventory(appId, steamID64, contextId);
+    console.log("Fetched Inventory:", inventory);
 
     // Find the user in the database
     const user = await User.findOne({ steamId: steamID64 });
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
-    // Save each item in the inventory to the database
-    const itemPromises = inventory.items.map(async (item) => {
+
+    // Fetch items in the current jackpot
+    const jackpot = await Jackpot.findOne({ status: 'in_progress' }).populate('participants.items');
+    const jackpotItems = jackpot ? jackpot.participants.flatMap(participant => participant.items) : [];
+    console.log("Jackpot Items:", jackpotItems);
+
+    // Extract asset IDs from jackpot items
+    const jackpotAssetIds = jackpotItems.map(item => item.assetId.toString());
+    console.log("Jackpot Asset IDs:", jackpotAssetIds);
+
+    // Filter out items that are in the jackpot from the inventory
+    const filteredInventoryItems = inventory.items.filter(item => !jackpotAssetIds.includes(item.assetIds[0].toString()));
+    console.log("Filtered Inventory Items:", filteredInventoryItems);
+
+    // Save each item in the filtered inventory to the database
+    const itemPromises = filteredInventoryItems.map(async (item) => {
       try {
         // Extract the numeric part from the price string and convert it to a number
-        const priceString = item.price; 
+        const priceString = item.price;
         const priceMatch = priceString.match(/\d+(\.\d+)?/);
         const price = priceMatch ? parseFloat(priceMatch[0]) : 0;
 
@@ -110,7 +211,6 @@ app.get('/api/inventory', async (req, res) => {
             assetId: assetId,
             appId: appId,
             contextId: contextId,
-            // quantity: item.quantity
           });
 
           const savedItem = await newItem.save();
@@ -132,20 +232,19 @@ app.get('/api/inventory', async (req, res) => {
 
     // Save the updated user with inventory references
     await user.save();
-    const userInventory = await User.findOne({steamId: steamID64}).populate('inventory')
-    
-    // console.log(userInventory.inventory.length);
-    // console.log(typeof(userInventory.inventory), typeof(inventory));
-    // console.log(typeof(userInventory.inventory[0].iconUrl),typeof(inventory.items[0].icon_url));
+    const userInventory = await User.findOne({ steamId: steamID64 }).populate('inventory');
+    console.log(userInventory.inventory);
     
 
-    res.json({items:userInventory.inventory, inv:inventory});
+    res.json({ items: userInventory.inventory, inv: filteredInventoryItems });
 
   } catch (error) {
     console.error("Error in /api/inventory:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 
 
@@ -227,9 +326,31 @@ app.get('/logout', (req, res) => {
 
 mongoose.connect('mongodb+srv://bilalshehroz420:00000@cluster0.wru7job.mongodb.net/ez_skin?retryWrites=true&w=majority')
   .then(() => {
-    app.listen(PORT, () => {
+    // app.listen(PORT, () => {
+    //   console.log(`Server is running on http://localhost:${PORT}`);
+    // });
+    const server = app.listen(PORT);
+    if (server) {
       console.log(`Server is running on http://localhost:${PORT}`);
-    });
+    }
+    const CORS = {
+      cors: {
+          origin: "http://localhost:3000", // Allow only your client application's origin
+          methods: ["GET", "POST","PUT","PATCH","OPTIONS","DELETE"], // Allowable methods
+          allowedHeaders: ["my-custom-header"], // Optional: specify headers
+          credentials: true // Optional: if you need cookies or authorization headers
+      }
+    }
+    const io = require('./socket').init(server,CORS);
+    return io;
+  }).then((io)=>{
+    // console.log(io);
+    
+    io.on('connection', socket => {
+      console.log('Client connected',socket.id);
+
+  })
+  
   })
   .catch(err => console.error('Database connection error:', err));
 

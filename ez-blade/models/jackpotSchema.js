@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
 
 const jackpotSchema = new mongoose.Schema({
-  items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Item' }], // Array of item IDs
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of participant IDs
+  participants: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Participant user ID
+    items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Item' }] // Array of items associated with the user
+  }],
   totalValue: { type: Number, default: 0 }, // Total value of items in the jackpot
   winner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Winner ID
   commissionPercentage: { type: Number, default: 10 }, // Commission percentage

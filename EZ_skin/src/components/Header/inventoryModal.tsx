@@ -8,6 +8,8 @@ import RewardIMG from "@/assets/images/rewards.png";
 import MoneyImg from "@/assets/images/money-bag.png";
 import InventoryPage from "@/pages/inventory";
 import axios from "axios";
+import { useRouter } from 'next/router';
+import openSocket from 'socket.io-client';
 
 const style = {
   position: "absolute" as "absolute",
@@ -33,6 +35,7 @@ interface InventoryItem {
 export default function InventoryModal() {
   const [open, setOpen] = React.useState(false);
   const [selectedItems, setSelectedItems] = React.useState<InventoryItem[]>([]);
+  // const router = useRouter();
 
   const handleOpen = (event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event propagation
@@ -66,9 +69,18 @@ export default function InventoryModal() {
   
       // Replace with your API endpoint
       const response = await axios.post('http://localhost:5000/jackpotSystem/join', { itemIds: transformedItems , userId:userId});
-  
-      // Handle API response here
-      console.log('Jackpot Deposit Response:', response.data);
+      // console.log(response);
+      // const socket = openSocket('http://localhost:5000');
+      // socket.on('jackpots', data => {
+      //   console.log("inventory",data.action);
+        
+      // // if (data.action === 'update') {
+      // //     // updatePost(data.post);
+      // //     console.log(data.post);
+          
+      // //   }
+      // });
+      
   
       // Navigate to a new page
       // router.push('/jackpot-success'); // Replace with the path to your success page

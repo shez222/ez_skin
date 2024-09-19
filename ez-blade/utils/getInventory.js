@@ -47,7 +47,7 @@ const getInventory = async (appid, steamid, contextid = 2, tradeable = false) =>
 
           // Find the corresponding price for the item from rust_market_items.json
           const marketItem = rustMarketItems.find(marketItem => marketItem.name === market_hash_name);
-          groupedItems[market_hash_name].price = marketItem ? marketItem.price : 'Price not found';
+          groupedItems[market_hash_name].price = marketItem ? marketItem.price : '0 USD';
         }
 
         groupedItems[market_hash_name].quantity += 1;

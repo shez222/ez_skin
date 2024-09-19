@@ -3,6 +3,10 @@ import audiom from "@/assets/audio/dice.mp3";
 import { motion, useAnimation } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
+const axios = require('axios');
+import openSocket from 'socket.io-client';
+
+
 const WheelContainer = styled.div`
   width: 100%;
   overflow: hidden;
@@ -94,6 +98,7 @@ const HorizontalWheel = () => {
         return "#F3BA2A";
     }
   };
+
   return (
     <div className="relative">
       <div className="w-full px-4 -top-3 z-[2] text-white  absolute flex justify-between">

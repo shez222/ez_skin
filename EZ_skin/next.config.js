@@ -45,8 +45,12 @@ const nextConfig = {
         hostname: "source.unsplash.com",
         port: "",
         pathname: "/random",
+        // domains: ['avatars.steamstatic.com'], // Add the allowed hostname(s) here
       },
     ],
+  },
+  images: {
+    domains: ['avatars.steamstatic.com'], // Add the allowed hostname(s) here
   },
 };
 
