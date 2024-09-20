@@ -5,6 +5,7 @@ interface InventoryItem {
   iconUrl: string;
   name: string;
   price: string;
+  owner: string;
   _id: string;
 }
 
