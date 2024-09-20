@@ -8,8 +8,6 @@ import RewardIMG from "@/assets/images/rewards.png";
 import MoneyImg from "@/assets/images/money-bag.png";
 import InventoryPage from "@/pages/inventory";
 import axios from "axios";
-import { useRouter } from 'next/router';
-import openSocket from 'socket.io-client';
 
 const style = {
   position: "absolute" as "absolute",

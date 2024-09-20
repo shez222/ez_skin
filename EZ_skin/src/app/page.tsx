@@ -9,6 +9,7 @@ import Image from "next/image";
 import openSocket from 'socket.io-client';
 import axios from "axios";
 import { useEffect , useState} from 'react';
+import Timer from './timer'
 
 export default function HomePage() {
   const [items, setItems] = useState([]); // Initialize state for items
@@ -324,6 +325,7 @@ export default function HomePage() {
           <div className="w-full mt-10">
             <HorizontalWheel />
           </div>
+          <Timer initialTime={120} />
           <div className="w-full">
             <div className="w-[95%] flex flex-wrap justify-center md:justify-start gap-2 mt-7 mx-auto">
               {items.map((item :any) => (
