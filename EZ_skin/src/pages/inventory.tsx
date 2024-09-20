@@ -34,6 +34,8 @@ const InventoryPage: React.FC<{ onSelectItem: (item: InventoryItem) => void; rew
           }
           const data: InventoryResponse = await response.json();
           setInventory(data.items);
+          // console.log(data.inv);
+          
         } catch (err: any) {
           setError(err.message);
         } finally {

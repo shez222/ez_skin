@@ -4,7 +4,6 @@ import { motion, useAnimation } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 const axios = require('axios');
-import openSocket from 'socket.io-client';
 
 
 const WheelContainer = styled.div`
@@ -101,7 +100,7 @@ const HorizontalWheel = () => {
 
   return (
     <div className="relative">
-      <div className="w-full px-4 -top-3 z-[2] text-white  absolute flex justify-between">
+      {/* <div className="w-full px-4 -top-3 z-[2] text-white  absolute flex justify-between">
         <div className="bg-black px-4 rounded-lg flex gap-2 ">
           <svg
             version="1.1"
@@ -412,7 +411,7 @@ const HorizontalWheel = () => {
           </svg>
           31/60
         </div>
-      </div>
+      </div> */}
       <WheelContainer>
         <svg
           fill="#000000"

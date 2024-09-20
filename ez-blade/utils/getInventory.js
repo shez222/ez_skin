@@ -15,7 +15,7 @@ const getInventory = async (appid, steamid, contextid = 2, tradeable = false) =>
     // console.log("jhkdfjhkjshkjdhskjh",`https://steamcommunity.com/inventory/${steamid}/${appid}/${contextid}`);
 
     const response = await axios.get(`https://steamcommunity.com/inventory/${steamid}/${appid}/${contextid}`);
-    console.log(response);
+    // console.log(response);
     
     const body = response.data;
     

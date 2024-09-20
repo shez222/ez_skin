@@ -159,7 +159,7 @@ app.get('/api/inventory', async (req, res) => {
 
     // Fetch the inventory
     const inventory = await getInventory(appId, steamID64, contextId);
-    console.log("Fetched Inventory:", inventory);
+    // console.log("Fetched Inventory:", inventory);
 
     // Find the user in the database
     const user = await User.findOne({ steamId: steamID64 });
@@ -168,17 +168,17 @@ app.get('/api/inventory', async (req, res) => {
     }
 
     // Fetch items in the current jackpot
-    const jackpot = await Jackpot.findOne({ status: 'in_progress' }).populate('participants.items');
+    const jackpot = await Jackpot.findOne({ status: { $in: ['in_progress', 'waiting'] } }).populate('participants.items');
     const jackpotItems = jackpot ? jackpot.participants.flatMap(participant => participant.items) : [];
-    console.log("Jackpot Items:", jackpotItems);
+    // console.log("Jackpot Items:", jackpotItems);
 
     // Extract asset IDs from jackpot items
     const jackpotAssetIds = jackpotItems.map(item => item.assetId.toString());
-    console.log("Jackpot Asset IDs:", jackpotAssetIds);
+    // console.log("Jackpot Asset IDs:", jackpotAssetIds);
 
     // Filter out items that are in the jackpot from the inventory
     const filteredInventoryItems = inventory.items.filter(item => !jackpotAssetIds.includes(item.assetIds[0].toString()));
-    console.log("Filtered Inventory Items:", filteredInventoryItems);
+    // console.log("Filtered Inventory Items:", filteredInventoryItems);
 
     // Save each item in the filtered inventory to the database
     const itemPromises = filteredInventoryItems.map(async (item) => {
@@ -222,7 +222,7 @@ app.get('/api/inventory', async (req, res) => {
 
       } catch (itemError) {
         // Handle errors
-        console.error(`Error processing item ${item.market_hash_name}`, itemError);
+        // console.error(`Error processing item ${item.market_hash_name}`, itemError);
         throw itemError;
       }
     });
@@ -233,9 +233,11 @@ app.get('/api/inventory', async (req, res) => {
     // Save the updated user with inventory references
     await user.save();
     const userInventory = await User.findOne({ steamId: steamID64 }).populate('inventory');
-    console.log(userInventory.inventory);
+    // console.log(userInventory.inventory);
     
-
+    const exist = await Item.find().countDocuments()
+    console.log(exist);
+    
     res.json({ items: userInventory.inventory, inv: filteredInventoryItems });
 
   } catch (error) {

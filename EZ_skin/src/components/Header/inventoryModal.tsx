@@ -4,7 +4,6 @@ import Modal from "@mui/material/Modal";
 import Button from "@mui/material/Button";
 import Image from "next/image";
 import HistoryIMG from "@/assets/images/history.png";
-import RewardIMG from "@/assets/images/rewards.png";
 import MoneyImg from "@/assets/images/money-bag.png";
 import InventoryPage from "@/pages/inventory";
 import axios from "axios";
@@ -58,32 +57,13 @@ export default function InventoryModal() {
   
   const handleJackpotDeposit = async () => {
     try {
-      // Transform the selectedItems array to include only the owner and _id fields
+
       const transformedItems = selectedItems.map(item => item._id);
       const userId = selectedItems[0].owner
-      // console.log(userId,transformedItems);
-      
-      
-  
-      // Replace with your API endpoint
       const response = await axios.post('http://localhost:5000/jackpotSystem/join', { itemIds: transformedItems , userId:userId});
-      // console.log(response);
-      // const socket = openSocket('http://localhost:5000');
-      // socket.on('jackpots', data => {
-      //   console.log("inventory",data.action);
-        
-      // // if (data.action === 'update') {
-      // //     // updatePost(data.post);
-      // //     console.log(data.post);
-          
-      // //   }
-      // });
-      
-  
-      // Navigate to a new page
-      // router.push('/jackpot-success'); // Replace with the path to your success page
-    } catch (error) {
-      // console.error('Jackpot Deposit Error:', error.response ? error.response.data : error.message);
+
+    } catch (error : any) {
+      console.error('Jackpot Deposit Error:', error.response ? error.response.data : error.message);
     }
   };
 
