@@ -1,26 +1,24 @@
 // components/TimerBox.js
 
 import { useState, useEffect } from 'react';
+import openSocket from 'socket.io-client';
 
-const TimerBox = ({ initialTime = 120, onTimeUp }) => {
-  const [timeLeft, setTimeLeft] = useState(initialTime);
+const TimerBox = () => {
+  const [timeLeft, setTimeLeft] = useState(120);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeLeft(prevTime => {
-        if (prevTime <= 1) {
-          clearInterval(interval);
-          if (onTimeUp) {
-            onTimeUp(); // Call the onTimeUp function when timer hits 0
-          }
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
+    const socket = openSocket('http://localhost:5000');
 
-    return () => clearInterval(interval);
-  }, [onTimeUp]);
+    // Listen for timer updates from the server
+    socket.on('timer', (data) => {
+      setTimeLeft(data.timeLeft);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div className="timer-container mt-5 ml-8">

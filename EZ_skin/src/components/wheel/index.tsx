@@ -471,39 +471,27 @@
 // export default HorizontalWheel;
 
 
+// components/HorizontalWheel.js
+
 import { motion, useAnimation } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 
-// Helper function to shuffle an array (Fisher-Yates Shuffle)
-const shuffleArray = (array) => {
-  let currentIndex = array.length, randomIndex;
-  while (currentIndex !== 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-  }
-  return array;
-};
-
+// Styled components
 const WheelContainer = styled.div`
   width: 100%;
   overflow: hidden;
-  border: 2px solid #000;
-  border-radius: 10px;
   position: relative;
-  box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.2);
 `;
 
-const Wheel = styled(motion.div)<{ itemCount: number }>`
+const Wheel = styled(motion.div)`
   display: flex;
   flex-direction: row;
-  width: ${({ itemCount }) => itemCount * 150}px; /* Dynamically adjust based on number of items */
 `;
 
-const Arrow = styled(motion.div)`
+const Arrow = styled.div`
   position: absolute;
-  top: -20px; /* Position above the wheel */
+  top: -20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -511,7 +499,7 @@ const Arrow = styled(motion.div)`
   height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-bottom: 30px solid red; /* Red arrow */
+  border-bottom: 30px solid red;
   animation: pulse 1.5s infinite;
 
   @keyframes pulse {
@@ -527,25 +515,17 @@ const Arrow = styled(motion.div)`
   }
 `;
 
-interface MyDivProps {
-  bgColor: string;
-}
-const WheelItem = styled.div<MyDivProps>`
-  width: 150px; /* Fixed width for each slot */
+const WheelItem = styled.div`
+  width: 150px;
   height: 120px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${({ bgColor }) => bgColor || "#fff"};
+  background-color: ${({ bgColor }) => bgColor};
   border-radius: 8px;
   margin: 0 5px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
   border: 2px solid ${({ bgColor }) => bgColor};
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: scale(1.05); /* Slight hover effect */
-  }
 `;
 
 const WheelItemContent = styled.div`
@@ -553,72 +533,88 @@ const WheelItemContent = styled.div`
   font-weight: bold;
   font-size: 14px;
   text-align: center;
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
-const HorizontalWheel = ({ participants }) => {
-  const [spin, setSpin] = useState(false);
+const UserImage = styled.img`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%; // Circular image
+  margin-bottom: 5px;
+  object-fit: cover;
+`;
+
+const HorizontalWheel = ({ participants, winnerIndex, winningParticipant }) => {
   const controls = useAnimation();
-  const timerRef: any = useRef(null);
-  const [winningParticipant, setWinningParticipant] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
 
-  // Calculate the total value of all participants
-  const totalValue = participants.reduce((acc, participant) => acc + participant.totalValue, 0);
+  // Constants
+  const SLOT_WIDTH = 160; // Adjusted if needed
+  const SPIN_DURATION = 5;
+  const NUM_SPINS = 3;
 
-  // Define a max number of slots to keep the wheel manageable (e.g., 15 slots)
-  const maxSlots = 15;
+  // Calculate total value
+  const totalValue = participants.reduce((acc, p) => acc + p.totalValue, 0);
 
-  // Generate scaled proportional slots for each participant based on their value contribution
+  // Generate wheel items based on participant contributions
+  console.log(participants);
+  console.log("win",winningParticipant);
+  
+
   let wheelItems = participants.flatMap((participant) => {
-    const scaledSlots = Math.round((participant.totalValue / totalValue) * maxSlots); // Scaled slots based on totalValue
-    return Array(scaledSlots).fill(participant); // Fill the wheel with the participant's scaled slots
+    const scaledSlots = Math.round((participant.totalValue / totalValue) * 100);
+    return Array(scaledSlots).fill(participant);
   });
 
-  // Shuffle the wheelItems to make them appear randomly placed
-  wheelItems = shuffleArray(wheelItems);
+  // Ensure wheelItems has at least one item
+  if (wheelItems.length === 0) {
+    wheelItems = participants;
+  }
 
-  // Repeat the wheel to make it circular
-  const repeatedWheelItems = [...wheelItems, ...wheelItems]; // Duplicate the array to simulate circular motion
+  // Duplicate wheel items to create a seamless loop
+  const repeatedWheelItems = Array(NUM_SPINS * 2)
+    .fill(wheelItems)
+    .flat();
 
-  const totalWheelLength = repeatedWheelItems.length * 150; // Total width in pixels of the entire wheel
-
-  useEffect(() => {
-    // Start spinning after 2 seconds
-    timerRef.current = setTimeout(() => {
-      setSpin(true);
-      setIsSpinning(true); // Mark wheel as spinning
-    }, 2000);
-    return () => clearTimeout(timerRef.current);
-  }, []);
+  // Total wheel length
+  const totalWheelLength = repeatedWheelItems.length * SLOT_WIDTH;
 
   useEffect(() => {
-    if (spin && isSpinning) {
-      // Choose a random distance for the spin
-      const randomPosition = Math.floor(Math.random() * wheelItems.length); // Select a random stopping position
-      const spinDistance = randomPosition * 150; // Calculate the exact stopping position based on item width
-
-      // Spin the wheel to a random position
-      controls
-        .start({
-          x: `-${spinDistance}px`, // Spin to the random stopping position
-          transition: { duration: 3, ease: [0.22, 1, 0.36, 1] }, // Smooth easing for spin stop
-        })
-        .then(() => {
-          // Calculate the stopping position based on the final wheel position in pixels
-          const finalPosition = spinDistance % (wheelItems.length * 150); // Modulus by total wheel length
-          const winnerIndex = Math.floor(finalPosition / 150); // Calculate which slot is at the arrow's position
-
-          setWinningParticipant(wheelItems[winnerIndex]); // Select the winner based on final stopping position
-          setSpin(false);
-          setIsSpinning(false); // Mark spinning as finished
-        });
+    if (winnerIndex !== null && !isSpinning) {
+      spinWheel(winnerIndex);
     }
-  }, [spin, controls, wheelItems, isSpinning]);
+  }, [winnerIndex]);
+
+  const spinWheel = (winnerIndex) => {
+    setIsSpinning(true);
+
+    const adjustedWinnerIndex =
+      winnerIndex + wheelItems.length * (NUM_SPINS * 2 - 1);
+
+    const spinDistance = adjustedWinnerIndex * SLOT_WIDTH;
+
+    console.log("Adjusted Winner Index:", adjustedWinnerIndex);
+    console.log("Spin Distance:", spinDistance);
+
+    controls
+      .start({
+        x: -spinDistance,
+        transition: {
+          duration: SPIN_DURATION,
+          ease: [0.22, 1, 0.36, 1],
+        },
+      })
+      .then(() => {
+        setIsSpinning(false);
+      });
+  };
 
   const getBG = (index) => {
     const colors = ["#F15C49", "#29A2D3", "#FE9AC4", "#349635", "#F3BA2A"];
-    return colors[index % colors.length]; // Cycle through colors
+    return colors[index % colors.length];
   };
 
   return (
@@ -627,24 +623,28 @@ const HorizontalWheel = ({ participants }) => {
       <Arrow />
 
       <WheelContainer>
-        <Wheel animate={controls} itemCount={repeatedWheelItems.length}> {/* Adjust wheel width */}
+        <Wheel animate={controls}>
           {repeatedWheelItems.map((participant, index) => (
             <WheelItem key={index} bgColor={getBG(index)}>
               <WheelItemContent>
+                <UserImage
+                  src={participant.img || "path/to/placeholder.jpg"}
+                  alt={participant.username}
+                />
                 {participant.username} <br />
                 (${participant.totalValue.toFixed(2)}) <br />
-                {/* Display their chances of winning */}
-                Chance: {((participant.totalValue / totalValue) * 100).toFixed(2)}%
+                Chance:{" "}
+                {((participant.totalValue / totalValue) * 100).toFixed(2)}%
               </WheelItemContent>
             </WheelItem>
           ))}
         </Wheel>
       </WheelContainer>
 
-      {/* Announce the winner based on where the wheel stops */}
+      {/* Announce the winner */}
       {winningParticipant && !isSpinning && (
         <div className="text-center mt-4">
-          <h2>Winner: {winningParticipant.username}</h2>
+          <h2>Winner: {winningParticipant.user.username}</h2>
         </div>
       )}
     </div>
@@ -653,7 +653,8 @@ const HorizontalWheel = ({ participants }) => {
 
 export default HorizontalWheel;
 
-   
+
+
 
 
 
