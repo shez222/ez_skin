@@ -3,7 +3,7 @@
   "version": "5.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"node ../EZ_SKIN/backend/index.js\"",
+    "dev": "concurrently \"next dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

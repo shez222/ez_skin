@@ -1,4 +1,655 @@
+// server.js
+
+require('dotenv').config(); // Ensure this is at the top
+const express = require('express');
+const passport = require('passport');
+const SteamStrategy = require('passport-steam').Strategy;
+const session = require('express-session');
+const cors = require('cors');
+const axios = require('axios');
+const fs = require('fs');
+const mongoose = require('mongoose');
+const User = require('./models/userSchema');
+const Item = require('./models/itemSchema');
+const Message = require('./models/messageSchema'); // Import the Message model
+const { getInventory } = require('./utils/getInventory');
+const jackpotRoutes = require('./routes/jackpotRoutes');
+const Jackpot = require('./models/jackpotSchema');
+
+// Initialize the app
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(express.json());
+app.use(
+  cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  })
+);
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'your_secret',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Set to true if using HTTPS
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Configure Passport with Steam Strategy
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+  done(null, obj);
+});
+
+passport.use(
+  new SteamStrategy(
+    {
+      returnURL: 'http://localhost:5000/auth/steam/return',
+      // returnURL: 'http://localhost:3000',
+      realm: 'http://localhost:5000/',
+      apiKey: process.env.STEAM_API_KEY,
+    },
+    (identifier, profile, done) => {
+      process.nextTick(() => {
+        profile.identifier = identifier;
+        return done(null, profile);
+      });
+    }
+  )
+);
+
+// Socket.io setup
+const http = require('http').Server(app);
+const io = require('./socket').init(http, {
+  cors: {
+    origin: 'http://localhost:3000', // Allow only your client application's origin
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'], // Allowable methods
+    credentials: true, // Optional: if you need cookies or authorization headers
+  },
+});
+
+// Import the jackpotManager module
+const jackpotManager = require('./jackpotManager');
+
+// Use jackpot routes
+app.use('/jackpotSystem', jackpotRoutes);
+
+// Inventory Route
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const steamID64 = req.query.steamID64;
+    const appId = parseInt(req.query.appId, 10) || 252490;
+    const contextId = parseInt(req.query.contextId, 10) || 2;
+
+    if (!steamID64) {
+      return res.status(400).json({ error: 'Missing SteamID64 parameter.' });
+    }
+
+    // Fetch the inventory
+    const inventory = await getInventory(appId, steamID64, contextId);
+
+    // Find the user in the database
+    const user = await User.findOne({ steamId: steamID64 });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Fetch items in the current jackpot
+    const jackpot = await Jackpot.findOne({ status: { $in: ['in_progress', 'waiting'] } }).populate('participants.items');
+    const jackpotItems = jackpot ? jackpot.participants.flatMap(participant => participant.items) : [];
+
+    // Extract asset IDs from jackpot items
+    const jackpotAssetIds = jackpotItems.map(item => item.assetId.toString());
+
+    // Filter out items that are in the jackpot from the inventory
+    const filteredInventoryItems = inventory.items.filter(item => !jackpotAssetIds.includes(item.assetIds[0].toString()));
+
+    // Save each item in the filtered inventory to the database
+    const itemPromises = filteredInventoryItems.map(async (item) => {
+      try {
+        // Extract the numeric part from the price string and convert it to a number
+        const priceString = item.price;
+        const priceMatch = priceString.match(/\d+(\.\d+)?/);
+        const price = priceMatch ? parseFloat(priceMatch[0]) : 0;
+
+        // Check if any of the asset IDs already exists in the database
+        const existingItem = await Item.findOne({
+          owner: user._id,
+          appId: appId,
+          contextId: contextId,
+          assetId: { $in: item.assetIds }
+        });
+
+        if (existingItem) {
+          // Item already exists in the inventory, update if needed
+          return existingItem;
+        }
+
+        // Create a new item entry for each asset ID
+        const newItemPromises = item.assetIds.map(async (assetId) => {
+          const newItem = new Item({
+            name: item.market_hash_name,
+            iconUrl: item.icon_url,
+            price: `${price} USD`,  // Save the numeric value
+            owner: user._id,
+            assetId: assetId,
+            appId: appId,
+            contextId: contextId,
+          });
+
+          const savedItem = await newItem.save();
+          user.inventory.push(savedItem._id); // Add item reference to user's inventory
+          return savedItem;
+        });
+
+        return Promise.all(newItemPromises);
+
+      } catch (itemError) {
+        throw itemError;
+      }
+    });
+
+    // Wait for all items to be saved
+    await Promise.all(itemPromises);
+
+    // Save the updated user with inventory references
+    await user.save();
+    const userInventory = await User.findOne({ steamId: steamID64 }).populate('inventory');
+
+    res.json({ items: userInventory.inventory, inv: filteredInventoryItems });
+
+  } catch (error) {
+    console.error("Error in /api/inventory:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Redirect to Steam login
+app.get('/auth/steam', passport.authenticate('steam'));
+
+// Steam authentication callback
+app.get(
+  '/auth/steam/return',
+  passport.authenticate('steam', { failureRedirect: '/' }),
+  async (req, res) => {
+    const user = req.user;
+    const steamID64 = user.id;
+    const username = user.displayName;
+    const profile = user.profileUrl;
+    const avatar = {
+      small: user.photos[0].value,
+      medium: user.photos[1].value,
+      large: user.photos[2].value,
+    };
+
+    try {
+      // Check if user already exists
+      let existingUser = await User.findOne({ steamId: steamID64 });
+
+      if (!existingUser) {
+        // If the user doesn't exist, create a new user
+        const newUser = new User({
+          steamId: steamID64,
+          username: username,
+          profileUrl: profile,
+          avatar: avatar,
+        });
+        await newUser.save();
+        console.log(`New user created: ${username}`);
+      } else {
+        console.log(`User already exists: ${username}`);
+      }
+
+      // Redirect to frontend with user info
+      const redirectUrl = `http://localhost:3000/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(
+        avatar
+      )}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Error saving user:', error);
+      res.redirect('/');
+    }
+  }
+);
+
+// Use jackpot routes
+app.use('/jackpotSystem', jackpotRoutes);
+
+// Route to redirect user to Steam Trade Offer URL page
+app.get('/trade-url', (req, res) => {
+  try {
+    const steamID64 = req.user?.id;
+    if (!steamID64) {
+      return res.status(401).json({ error: 'Unauthorized: No Steam ID found.' });
+    }
+    const tradeUrl = `https://steamcommunity.com/profiles/${steamID64}/tradeoffers/privacy#trade_offer_access_url`;
+    res.redirect(tradeUrl);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Logout route
+app.get('/logout', (req, res, next) => { // Added 'next' to handle errors
+  req.logout(err => {
+    if (err) {
+      return next(err);
+    }
+    req.session.destroy(err => {
+      if (err) {
+        return next(err);
+      }
+      res.redirect('http://localhost:3000/'); // Redirect to your frontend after logout
+    });
+  });
+});
+
+// Connect to MongoDB and start the server
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000@cluster0.wru7job.mongodb.net/ez_skin?retryWrites=true&w=majority')
+  .then(() => {
+    http.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
+
+    // Existing Socket.IO connection handler
+    io.on('connection', socket => {
+      console.log('Client connected', socket.id);
+      // Existing event handlers (if any)
+    });
+
+    // Chat namespace for chat functionality
+    const chatNamespace = io.of('/chat');
+
+    chatNamespace.on('connection', async (socket) => {
+      console.log('Client connected to chat namespace', socket.id);
+
+      try {
+        // Fetch the last 20 messages from the database, sorted by timestamp ascending
+        const lastMessages = await Message.find()
+          .sort({ timestamp: -1 })
+          .limit(20)
+          .sort({ timestamp: 1 }); // To send them in chronological order
+
+        // Send the initial messages to the newly connected client
+        socket.emit('initialMessages', lastMessages);
+      } catch (err) {
+        console.error('Error fetching initial messages:', err);
+      }
+
+      // Listen for incoming chat messages
+      socket.on('chatMessage', async (msg) => {
+        // Add a timestamp if not provided
+        msg.timestamp = msg.timestamp || new Date();
+
+        // Save the message to the database
+        const message = new Message({
+          username: msg.username,
+          text: msg.text,
+          avatar: msg.avatar,
+          timestamp: msg.timestamp,
+        });
+
+        try {
+          await message.save();
+
+          // After saving, check if there are more than 20 messages
+          const messageCount = await Message.countDocuments();
+          if (messageCount > 20) {
+            // Fetch the messages to delete
+            const messagesToDelete = await Message.find()
+              .sort({ timestamp: 1 }) // Oldest first
+              .limit(messageCount - 20);
+
+            // Extract the IDs of messages to delete
+            const idsToDelete = messagesToDelete.map(msg => msg._id);
+
+            // Delete all messages with the extracted IDs
+            await Message.deleteMany({ _id: { $in: idsToDelete } });
+          }
+
+        } catch (err) {
+          console.error('Error saving message:', err);
+          return;
+        }
+
+        // Broadcast the message to all connected clients in the chat namespace
+        chatNamespace.emit('chatMessage', msg);
+      });
+
+      // Handle disconnect event
+      socket.on('disconnect', () => {
+        console.log('Client disconnected from chat namespace', socket.id);
+      });
+    });
+
+  })
+  .catch(err => console.error('Database connection error:', err));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // require('dotenv').config(); // Ensure this is at the top
+// const express = require('express');
+// const passport = require('passport');
+// const SteamStrategy = require('passport-steam').Strategy;
+// const session = require('express-session');
+// const cors = require('cors');
+// const axios = require('axios');
+// const fs = require('fs');
+// const mongoose = require('mongoose');
+// const User = require('./models/userSchema');
+// const Item = require('./models/itemSchema');
+// const { getInventory } = require('./utils/getInventory');
+// const jackpotRoutes = require('./routes/jackpotRoutes');
+// const Jackpot = require('./models/jackpotSchema');
+
+// // Initialize the app
+// const app = express();
+// const PORT = process.env.PORT || 5000;
+
+// // Middleware
+// app.use(express.json());
+// app.use(
+//   cors({
+//     origin: 'http://localhost:3000',
+//     methods: ['GET', 'POST'],
+//     credentials: true,
+//   })
+// );
+
+// app.use(
+//   session({
+//     secret: process.env.SESSION_SECRET || 'your_secret',
+//     resave: false,
+//     saveUninitialized: true,
+//     cookie: { secure: false }, // Set to true if using HTTPS
+//   })
+// );
+
+// app.use(passport.initialize());
+// app.use(passport.session());
+
+// // Configure Passport with Steam Strategy
+// passport.serializeUser((user, done) => {
+//   done(null, user);
+// });
+
+// passport.deserializeUser((obj, done) => {
+//   done(null, obj);
+// });
+
+// passport.use(
+//   new SteamStrategy(
+//     {
+//       returnURL: 'http://localhost:5000/auth/steam/return',
+//       realm: 'http://localhost:5000/',
+//       apiKey: process.env.STEAM_API_KEY,
+//     },
+//     (identifier, profile, done) => {
+//       process.nextTick(() => {
+//         profile.identifier = identifier;
+//         return done(null, profile);
+//       });
+//     }
+//   )
+// );
+
+// // Socket.io setup
+// const http = require('http').Server(app);
+// const io = require('./socket').init(http, {
+//   cors: {
+//     origin: 'http://localhost:3000', // Allow only your client application's origin
+//     methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'], // Allowable methods
+//     credentials: true, // Optional: if you need cookies or authorization headers
+//   },
+// });
+
+// // Import the jackpotManager module
+// const jackpotManager = require('./jackpotManager');
+
+// // Use jackpot routes
+// app.use('/jackpotSystem', jackpotRoutes);
+
+// // Inventory Route
+// app.get('/api/inventory', async (req, res) => {
+//   try {
+//     const steamID64 = req.query.steamID64;
+//     const appId = parseInt(req.query.appId, 10) || 252490;
+//     const contextId = parseInt(req.query.contextId, 10) || 2;
+
+//     if (!steamID64) {
+//       return res.status(400).json({ error: 'Missing SteamID64 parameter.' });
+//     }
+
+//     // Fetch the inventory
+//     const inventory = await getInventory(appId, steamID64, contextId);
+
+//     // Find the user in the database
+//     const user = await User.findOne({ steamId: steamID64 });
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found.' });
+//     }
+
+//     // Fetch items in the current jackpot
+//     const jackpot = await Jackpot.findOne({ status: { $in: ['in_progress', 'waiting'] } }).populate('participants.items');
+//     const jackpotItems = jackpot ? jackpot.participants.flatMap(participant => participant.items) : [];
+
+//     // Extract asset IDs from jackpot items
+//     const jackpotAssetIds = jackpotItems.map(item => item.assetId.toString());
+
+//     // Filter out items that are in the jackpot from the inventory
+//     const filteredInventoryItems = inventory.items.filter(item => !jackpotAssetIds.includes(item.assetIds[0].toString()));
+
+//     // Save each item in the filtered inventory to the database
+//     const itemPromises = filteredInventoryItems.map(async (item) => {
+//       try {
+//         // Extract the numeric part from the price string and convert it to a number
+//         const priceString = item.price;
+//         const priceMatch = priceString.match(/\d+(\.\d+)?/);
+//         const price = priceMatch ? parseFloat(priceMatch[0]) : 0;
+
+//         // Check if any of the asset IDs already exists in the database
+//         const existingItem = await Item.findOne({
+//           owner: user._id,
+//           appId: appId,
+//           contextId: contextId,
+//           assetId: { $in: item.assetIds }
+//         });
+
+//         if (existingItem) {
+//           // Item already exists in the inventory, update if needed
+//           return existingItem;
+//         }
+
+//         // Create a new item entry for each asset ID
+//         const newItemPromises = item.assetIds.map(async (assetId) => {
+//           const newItem = new Item({
+//             name: item.market_hash_name,
+//             iconUrl: item.icon_url,
+//             price: `${price} USD`,  // Save the numeric value
+//             owner: user._id,
+//             assetId: assetId,
+//             appId: appId,
+//             contextId: contextId,
+//           });
+
+//           const savedItem = await newItem.save();
+//           user.inventory.push(savedItem._id); // Add item reference to user's inventory
+//           return savedItem;
+//         });
+
+//         return Promise.all(newItemPromises);
+
+//       } catch (itemError) {
+//         throw itemError;
+//       }
+//     });
+
+//     // Wait for all items to be saved
+//     await Promise.all(itemPromises);
+
+//     // Save the updated user with inventory references
+//     await user.save();
+//     const userInventory = await User.findOne({ steamId: steamID64 }).populate('inventory');
+
+//     res.json({ items: userInventory.inventory, inv: filteredInventoryItems });
+
+//   } catch (error) {
+//     console.error("Error in /api/inventory:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // Redirect to Steam login
+// app.get('/auth/steam', passport.authenticate('steam'));
+
+// // Steam authentication callback
+// app.get(
+//   '/auth/steam/return',
+//   passport.authenticate('steam', { failureRedirect: '/' }),
+//   async (req, res) => {
+//     const user = req.user;
+//     const steamID64 = user.id;
+//     const username = user.displayName;
+//     const profile = user.profileUrl;
+//     const avatar = {
+//       small: user.photos[0].value,
+//       medium: user.photos[1].value,
+//       large: user.photos[2].value,
+//     };
+
+//     try {
+//       // Check if user already exists
+//       let existingUser = await User.findOne({ steamId: steamID64 });
+
+//       if (!existingUser) {
+//         // If the user doesn't exist, create a new user
+//         const newUser = new User({
+//           steamId: steamID64,
+//           username: username,
+//           profileUrl: profile,
+//           avatar: avatar,
+//         });
+//         await newUser.save();
+//         console.log(`New user created: ${username}`);
+//       } else {
+//         console.log(`User already exists: ${username}`);
+//       }
+
+//       // Redirect to frontend with user info
+//       const redirectUrl = `http://localhost:3000/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(
+//         avatar
+//       )}`;
+//       res.redirect(redirectUrl);
+//     } catch (error) {
+//       console.error('Error saving user:', error);
+//       res.redirect('/');
+//     }
+//   }
+// );
+
+// // Use jackpot routes
+// app.use('/jackpotSystem', jackpotRoutes);
+
+// // Route to redirect user to Steam Trade Offer URL page
+// app.get('/trade-url', (req, res) => {
+//   try {
+//     const steamID64 = req.user?.id;
+//     if (!steamID64) {
+//       return res.status(401).json({ error: 'Unauthorized: No Steam ID found.' });
+//     }
+//     const tradeUrl = `https://steamcommunity.com/profiles/${steamID64}/tradeoffers/privacy#trade_offer_access_url`;
+//     res.redirect(tradeUrl);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // Logout route
+// app.get('/logout', (req, res) => {
+//   req.logout(err => {
+//     if (err) {
+//       return next(err);
+//     }
+//     req.session.destroy(err => {
+//       if (err) {
+//         return next(err);
+//       }
+//       res.redirect('http://localhost:3000/'); // Redirect to your frontend after logout
+//     });
+//   });
+// });
+
+// // Connect to MongoDB and start the server
+// mongoose.connect('mongodb+srv://bilalshehroz420:00000@cluster0.wru7job.mongodb.net/ez_skin?retryWrites=true&w=majority')
+//   .then(() => {
+//     http.listen(PORT, () => {
+//       console.log(`Server is running on http://localhost:${PORT}`);
+//     });
+
+//     io.on('connection', socket => {
+//       console.log('Client connected', socket.id);
+//     });
+//   })
+//   .catch(err => console.error('Database connection error:', err));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // require('dotenv').config(); // Ensure this is at the top
 // const express = require('express');
 // const passport = require('passport');
 // const SteamStrategy = require('passport-steam').Strategy;
@@ -357,269 +1008,3 @@
 //   .catch(err => console.error('Database connection error:', err));
 
 // server.js
-
-require('dotenv').config(); // Ensure this is at the top
-const express = require('express');
-const passport = require('passport');
-const SteamStrategy = require('passport-steam').Strategy;
-const session = require('express-session');
-const cors = require('cors');
-const axios = require('axios');
-const fs = require('fs');
-const mongoose = require('mongoose');
-const User = require('./models/userSchema');
-const Item = require('./models/itemSchema');
-const { getInventory } = require('./utils/getInventory');
-const jackpotRoutes = require('./routes/jackpotRoutes');
-const Jackpot = require('./models/jackpotSchema');
-
-// Initialize the app
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-// Middleware
-app.use(express.json());
-app.use(
-  cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-    credentials: true,
-  })
-);
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'your_secret',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }, // Set to true if using HTTPS
-  })
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Configure Passport with Steam Strategy
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
-});
-
-passport.use(
-  new SteamStrategy(
-    {
-      returnURL: 'http://localhost:5000/auth/steam/return',
-      realm: 'http://localhost:5000/',
-      apiKey: process.env.STEAM_API_KEY,
-    },
-    (identifier, profile, done) => {
-      process.nextTick(() => {
-        profile.identifier = identifier;
-        return done(null, profile);
-      });
-    }
-  )
-);
-
-// Socket.io setup
-const http = require('http').Server(app);
-const io = require('./socket').init(http, {
-  cors: {
-    origin: 'http://localhost:3000', // Allow only your client application's origin
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'], // Allowable methods
-    credentials: true, // Optional: if you need cookies or authorization headers
-  },
-});
-
-// Import the jackpotManager module
-const jackpotManager = require('./jackpotManager');
-
-// Use jackpot routes
-app.use('/jackpotSystem', jackpotRoutes);
-
-// Inventory Route
-app.get('/api/inventory', async (req, res) => {
-  try {
-    const steamID64 = req.query.steamID64;
-    const appId = parseInt(req.query.appId, 10) || 252490;
-    const contextId = parseInt(req.query.contextId, 10) || 2;
-
-    if (!steamID64) {
-      return res.status(400).json({ error: 'Missing SteamID64 parameter.' });
-    }
-
-    // Fetch the inventory
-    const inventory = await getInventory(appId, steamID64, contextId);
-
-    // Find the user in the database
-    const user = await User.findOne({ steamId: steamID64 });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    // Fetch items in the current jackpot
-    const jackpot = await Jackpot.findOne({ status: { $in: ['in_progress', 'waiting'] } }).populate('participants.items');
-    const jackpotItems = jackpot ? jackpot.participants.flatMap(participant => participant.items) : [];
-
-    // Extract asset IDs from jackpot items
-    const jackpotAssetIds = jackpotItems.map(item => item.assetId.toString());
-
-    // Filter out items that are in the jackpot from the inventory
-    const filteredInventoryItems = inventory.items.filter(item => !jackpotAssetIds.includes(item.assetIds[0].toString()));
-
-    // Save each item in the filtered inventory to the database
-    const itemPromises = filteredInventoryItems.map(async (item) => {
-      try {
-        // Extract the numeric part from the price string and convert it to a number
-        const priceString = item.price;
-        const priceMatch = priceString.match(/\d+(\.\d+)?/);
-        const price = priceMatch ? parseFloat(priceMatch[0]) : 0;
-
-        // Check if any of the asset IDs already exists in the database
-        const existingItem = await Item.findOne({
-          owner: user._id,
-          appId: appId,
-          contextId: contextId,
-          assetId: { $in: item.assetIds }
-        });
-
-        if (existingItem) {
-          // Item already exists in the inventory, update if needed
-          return existingItem;
-        }
-
-        // Create a new item entry for each asset ID
-        const newItemPromises = item.assetIds.map(async (assetId) => {
-          const newItem = new Item({
-            name: item.market_hash_name,
-            iconUrl: item.icon_url,
-            price: `${price} USD`,  // Save the numeric value
-            owner: user._id,
-            assetId: assetId,
-            appId: appId,
-            contextId: contextId,
-          });
-
-          const savedItem = await newItem.save();
-          user.inventory.push(savedItem._id); // Add item reference to user's inventory
-          return savedItem;
-        });
-
-        return Promise.all(newItemPromises);
-
-      } catch (itemError) {
-        throw itemError;
-      }
-    });
-
-    // Wait for all items to be saved
-    await Promise.all(itemPromises);
-
-    // Save the updated user with inventory references
-    await user.save();
-    const userInventory = await User.findOne({ steamId: steamID64 }).populate('inventory');
-
-    res.json({ items: userInventory.inventory, inv: filteredInventoryItems });
-
-  } catch (error) {
-    console.error("Error in /api/inventory:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Redirect to Steam login
-app.get('/auth/steam', passport.authenticate('steam'));
-
-// Steam authentication callback
-app.get(
-  '/auth/steam/return',
-  passport.authenticate('steam', { failureRedirect: '/' }),
-  async (req, res) => {
-    const user = req.user;
-    const steamID64 = user.id;
-    const username = user.displayName;
-    const profile = user.profileUrl;
-    const avatar = {
-      small: user.photos[0].value,
-      medium: user.photos[1].value,
-      large: user.photos[2].value,
-    };
-
-    try {
-      // Check if user already exists
-      let existingUser = await User.findOne({ steamId: steamID64 });
-
-      if (!existingUser) {
-        // If the user doesn't exist, create a new user
-        const newUser = new User({
-          steamId: steamID64,
-          username: username,
-          profileUrl: profile,
-          avatar: avatar,
-        });
-        await newUser.save();
-        console.log(`New user created: ${username}`);
-      } else {
-        console.log(`User already exists: ${username}`);
-      }
-
-      // Redirect to frontend with user info
-      const redirectUrl = `http://localhost:3000/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(
-        avatar
-      )}`;
-      res.redirect(redirectUrl);
-    } catch (error) {
-      console.error('Error saving user:', error);
-      res.redirect('/');
-    }
-  }
-);
-
-// Use jackpot routes
-app.use('/jackpotSystem', jackpotRoutes);
-
-// Route to redirect user to Steam Trade Offer URL page
-app.get('/trade-url', (req, res) => {
-  try {
-    const steamID64 = req.user?.id;
-    if (!steamID64) {
-      return res.status(401).json({ error: 'Unauthorized: No Steam ID found.' });
-    }
-    const tradeUrl = `https://steamcommunity.com/profiles/${steamID64}/tradeoffers/privacy#trade_offer_access_url`;
-    res.redirect(tradeUrl);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Logout route
-app.get('/logout', (req, res) => {
-  req.logout(err => {
-    if (err) {
-      return next(err);
-    }
-    req.session.destroy(err => {
-      if (err) {
-        return next(err);
-      }
-      res.redirect('http://localhost:3000/'); // Redirect to your frontend after logout
-    });
-  });
-});
-
-// Connect to MongoDB and start the server
-mongoose.connect('mongodb+srv://bilalshehroz420:00000@cluster0.wru7job.mongodb.net/ez_skin?retryWrites=true&w=majority')
-  .then(() => {
-    http.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-    });
-
-    io.on('connection', socket => {
-      console.log('Client connected', socket.id);
-    });
-  })
-  .catch(err => console.error('Database connection error:', err));
-
