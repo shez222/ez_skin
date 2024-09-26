@@ -74,7 +74,7 @@ passport.use(
 const http = require('http').Server(app);
 const io = require('./socket').init(http, {
   cors: {
-    origin: `https://ez-skin-f.vercel.app/`, // Allow only your client application's origin
+    origin: `${front_url}`, // Allow only your client application's origin
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'], // Allowable methods
     credentials: true, // Optional: if you need cookies or authorization headers
   },
