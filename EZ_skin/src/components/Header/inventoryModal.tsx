@@ -35,7 +35,7 @@ export default function InventoryModal() {
   const [selectedItems, setSelectedItems] = React.useState<InventoryItem[]>([]);
   // const router = useRouter();
   const SOCKET_SERVER_URL =
-    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://ez-skin.vercel.app";
 
   const handleOpen = (event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event propagation

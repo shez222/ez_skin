@@ -6,7 +6,7 @@ import openSocket from "socket.io-client";
 const TimerBox = () => {
   const [timeLeft, setTimeLeft] = useState(120);
   const SOCKET_SERVER_URL =
-    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://ez-skin.vercel.app";
 
   useEffect(() => {
     const socket = openSocket(`${SOCKET_SERVER_URL}`);

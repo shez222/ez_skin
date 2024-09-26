@@ -29,7 +29,7 @@ const InventoryPage: React.FC<{
     const appId = params.get("appId") || "252490"; // Default appId if not provided
     const contextId = params.get("contextId") || "2"; // Default contextId if not provided
     const SOCKET_SERVER_URL =
-      process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+      process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://ez-skin.vercel.app";
 
     if (steamID64) {
       const fetchInventory = async () => {

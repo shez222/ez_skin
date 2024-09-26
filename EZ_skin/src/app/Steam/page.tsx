@@ -9,7 +9,7 @@ const SteamLogin: React.FC = () => {
   const [steamID64, setSteamID64] = useState<string>("");
   const [avatar, setAvatar] = useState<string>("");
   const SOCKET_SERVER_URL =
-    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://ez-skin.vercel.app";
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -89,7 +89,7 @@ const SteamLogin: React.FC = () => {
         <div className="flex gap-x-8 items-center">
           <AccountSetting user={username} userProfile={avatar} />
           {/* <img src={avatar} alt="Steam Avatar" className="w-10 h-10 rounded-full" /> */}
-          <a href="http://localhost:5000/logout">
+          <a href="https://ez-skin.vercel.app/logout">
             <button id="logoutButton" onClick={handleLogout}>
               <LogoutIcon htmlColor="white" />
             </button>

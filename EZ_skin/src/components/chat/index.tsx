@@ -55,7 +55,7 @@ const Chat: React.FC = () => {
 
     // Replace with your actual Socket.IO server URL or use environment variables
     const socketURL =
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000/chat";
+      process.env.NEXT_PUBLIC_SOCKET_URL || "https://ez-skin.vercel.app/chat";
     socket.current = io(socketURL);
 
     // Listen for initial messages
@@ -180,7 +180,7 @@ export default Chat;
 
 //   useEffect(() => {
 //     // Connect to the chat namespace
-//     socket.current = io('http://localhost:5000/chat'); // Note the '/chat' namespace
+//     socket.current = io('https://ez-skin.vercel.app/chat'); // Note the '/chat' namespace
 
 //     // Listen for initial messages
 //     socket.current.on('initialMessages', (msgs) => {

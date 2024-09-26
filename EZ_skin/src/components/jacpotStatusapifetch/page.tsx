@@ -12,7 +12,7 @@ import Modal from "../ModalInventory"; // Import the Modal component
 
 // Define environment variable for Socket.IO server URL
 const SOCKET_SERVER_URL =
-  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://ez-skin.vercel.app";
 
 // ----------------------
 // Type Definitions
@@ -390,7 +390,7 @@ const ItemBadge: React.FC<ItemBadgeProps> = ({ item }) => {
 // import TimerBox from "../timer/timer";
 
 // // Define environment variable for Socket.IO server URL
-// const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+// const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://ez-skin.vercel.app";
 
 // // ----------------------
 // // Type Definitions
@@ -676,12 +676,12 @@ const ItemBadge: React.FC<ItemBadgeProps> = ({ item }) => {
 //   };
 
 //   useEffect(() => {
-//     const socket = openSocket('http://localhost:5000');
+//     const socket = openSocket('https://ez-skin.vercel.app');
 
 //     // Fetch initial jackpot data
 //     const fetchJackpotData = async () => {
 //       try {
-//         const response = await axios.get('http://localhost:5000/jackpotSystem/status');
+//         const response = await axios.get('https://ez-skin.vercel.app/jackpotSystem/status');
 //         const participantsData = response.data.participants;
 
 //         const initialParticipants = participantsData.map((participant) => {

@@ -111,7 +111,7 @@ const JackpotHistory: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedJackpot, setSelectedJackpot] = useState<Jackpot | null>(null);
   const SOCKET_SERVER_URL =
-    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://ez-skin.vercel.app";
 
   // Fetch completed jackpots from the backend
   useEffect(() => {
