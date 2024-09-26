@@ -3,7 +3,7 @@
 const Jackpot = require('./models/jackpotSchema');
 const io = require('./socket');
 
-let roundDuration = 12; // in seconds
+let roundDuration = 30; // in seconds
 let roundStartTime = null;
 let timerInterval = null;
 

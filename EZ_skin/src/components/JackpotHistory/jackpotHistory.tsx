@@ -49,38 +49,6 @@ const getBorderColor = (totalValue: number): string => {
   return "#F3BA2A"; // Yellow for low value
 };
 
-// ParticipantCard Component
-// const ParticipantCard: React.FC<{ participant: Participant }> = ({ participant }) => {
-//   const { user, items } = participant;
-
-//   // Calculate total value from items
-//   const totalParticipantValue = items.reduce((acc, item) => acc + item.price, 0);
-
-//   return (
-//     <div
-//       className={`w-[250px] border-[1px] border-black rounded-md py-2 px-4 border-r-4 bg-gray-800  hover:bg-gray-800`}
-//       style={{ borderRightColor: getBorderColor(totalParticipantValue) }}
-//     >
-//       <div className="flex items-center gap-2">
-//         <Image
-//           width={40}
-//           height={40}
-//           className="rounded-full"
-//           src={user.avatar.small || "/default-avatar.png"} // Ensure you have a default avatar image in public directory
-//           alt={user.username || "Unknown User"}
-//         />
-//         <div className="flex flex-col">
-//           <p className="text-sm font-semibold text-white">
-//             {user.username || "Unknown User"}
-//           </p>
-//           <p className="text-xs text-gray-300">
-//             {/* {items.length} {items.length === 1 ? "Skin" : "Skins"} @ ${totalParticipantValue} */}
-//           </p>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
 
 // JackpotCard Component
 const JackpotCard: React.FC<{ jackpot: Jackpot; onClick: (jackpot: Jackpot) => void }> = ({ jackpot, onClick }) => {
@@ -180,11 +148,18 @@ const JackpotHistory: React.FC = () => {
         <h1 className="text-4xl mt-8 md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-500 to-red-500">
           Jackpot History
         </h1>
+        <h3 className=" font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-600 to-yellow-500">
+            (Last 24 hours)
+        </h3>
       </div>
-      {jackpots.map((jackpot) => (
-        <JackpotCard key={jackpot._id} jackpot={jackpot} onClick={openModal} />
-      ))}
-
+      <div className="overflow-auto h-96">
+        {jackpots.map((jackpot) => (
+            <JackpotCard key={jackpot._id} jackpot={jackpot} onClick={openModal} />
+        ))}
+        {/* {jackpots.map((jackpot) => (
+            <JackpotCard key={jackpot._id} jackpot={jackpot} onClick={openModal} />
+        ))} */}
+      </div>
       {/* Modal for Jackpot Details */}
       <Transition appear show={selectedJackpot !== null} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={closeModal}>
@@ -237,7 +212,6 @@ const JackpotHistory: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <p className="text-gray-300"><strong>Status:</strong> {selectedJackpot.status.replace("_", " ").toUpperCase()}</p>
-                            <p className="text-gray-300"><strong>Commission:</strong> {selectedJackpot.commissionPercentage}%</p>
                             <p className="text-gray-300"><strong>Total Value:</strong> ${selectedJackpot.totalValue.toFixed(2)}</p>
                             <p className="text-gray-300"><strong>Winner:</strong> {selectedJackpot.winner?.username || "No Winner"}</p>
                         </div>
