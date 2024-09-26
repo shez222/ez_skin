@@ -13,7 +13,10 @@ interface InventoryResponse {
   items: InventoryItem[];
 }
 
-const InventoryPage: React.FC<{ onSelectItem: (item: InventoryItem) => void; rewardLimitReached: boolean }> = ({ onSelectItem, rewardLimitReached }) => {
+const InventoryPage: React.FC<{
+  onSelectItem: (item: InventoryItem) => void;
+  rewardLimitReached: boolean;
+}> = ({ onSelectItem, rewardLimitReached }) => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,19 +29,20 @@ const InventoryPage: React.FC<{ onSelectItem: (item: InventoryItem) => void; rew
     const appId = params.get("appId") || "252490"; // Default appId if not provided
     const contextId = params.get("contextId") || "2"; // Default contextId if not provided
     const SOCKET_SERVER_URL =
-    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+      process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
     if (steamID64) {
       const fetchInventory = async () => {
         try {
-          const response = await fetch(`${SOCKET_SERVER_URL}/api/inventory?steamID64=${steamID64}&appId=${appId}&contextId=${contextId}`);
+          const response = await fetch(
+            `${SOCKET_SERVER_URL}/api/inventory?steamID64=${steamID64}&appId=${appId}&contextId=${contextId}`,
+          );
           if (!response.ok) {
             throw new Error("Failed to fetch inventory");
           }
           const data: InventoryResponse = await response.json();
           setInventory(data.items);
           // console.log(data.inv);
-          
         } catch (err: any) {
           setError(err.message);
         } finally {
@@ -57,7 +61,9 @@ const InventoryPage: React.FC<{ onSelectItem: (item: InventoryItem) => void; rew
 
   const handleItemClick = (item: InventoryItem) => {
     if (!rewardLimitReached && selectionEnabled) {
-      setInventory((prevInventory) => prevInventory.filter((i) => i._id !== item._id)); // Remove from inventory
+      setInventory((prevInventory) =>
+        prevInventory.filter((i) => i._id !== item._id),
+      ); // Remove from inventory
       onSelectItem(item); // Send to rewards
       setShowMessage(false); // Hide message when item is successfully moved
     } else if (!selectionEnabled) {
@@ -83,19 +89,13 @@ const InventoryPage: React.FC<{ onSelectItem: (item: InventoryItem) => void; rew
       <ul className="grid grid-cols-5 gap-4 p-10">
         {inventory.map((item) => (
           <li key={item._id} onClick={() => handleItemClick(item)}>
-            <div className={`bg-[#2C2C2E] p-2 rounded-md cursor-pointer ${!selectionEnabled ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <img
-                src={item.iconUrl}
-                alt={item.name}
-                className=""
-              />
+            <div
+              className={`bg-[#2C2C2E] p-2 rounded-md cursor-pointer ${!selectionEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <img src={item.iconUrl} alt={item.name} className="" />
               <div className="w-full flex justify-between items-center p-2 text-xs">
-                <p className="font-medium text-white">
-                  {item.name}
-                </p>
-                <p className="font-medium text-green-700">
-                  {item.price}
-                </p>
+                <p className="font-medium text-white">{item.name}</p>
+                <p className="font-medium text-green-700">{item.price}</p>
               </div>
             </div>
           </li>

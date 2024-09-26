@@ -9,7 +9,7 @@ const SteamLogin: React.FC = () => {
   const [steamID64, setSteamID64] = useState<string>("");
   const [avatar, setAvatar] = useState<string>("");
   const SOCKET_SERVER_URL =
-  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

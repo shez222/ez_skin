@@ -78,9 +78,8 @@ export default function JackpotStatus() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [showWheel, setShowWheel] = useState<boolean>(false);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
-  const [winningParticipant, setWinningParticipant] = useState<
-    Participant | null
-  >(null);
+  const [winningParticipant, setWinningParticipant] =
+    useState<Participant | null>(null);
   const [spinStartTime, setSpinStartTime] = useState<number | null>(null); // New state for start time
 
   // Helper function to extract numeric value from a price string (e.g., "12.34 USD" -> 12.34)
@@ -95,14 +94,14 @@ export default function JackpotStatus() {
   useEffect(() => {
     // Initialize Socket.IO client
     console.log(SOCKET_SERVER_URL);
-    
+
     const socket: Socket = io(SOCKET_SERVER_URL);
 
     // Fetch initial jackpot data
     const fetchJackpotData = async () => {
       try {
         const response: AxiosResponse<JackpotStatusResponse> = await axios.get(
-          `${SOCKET_SERVER_URL}/jackpotSystem/status`
+          `${SOCKET_SERVER_URL}/jackpotSystem/status`,
         );
         const participantsData: ParticipantData[] = response.data.participants;
 
@@ -121,14 +120,14 @@ export default function JackpotStatus() {
               skinCount: participant.items.length,
               img: user.avatar.small || "/default-avatar.png",
             };
-          }
+          },
         );
 
         setParticipants(initialParticipants);
       } catch (error: any) {
         console.error(
           "Error fetching jackpot data:",
-          error.response ? error.response.data : error.message
+          error.response ? error.response.data : error.message,
         );
       }
     };
@@ -152,7 +151,7 @@ export default function JackpotStatus() {
             skinCount: participant.items.length,
             img: user.avatar.small || "/default-avatar.png",
           };
-        }
+        },
       );
       setParticipants(updatedParticipants);
     });
@@ -180,11 +179,11 @@ export default function JackpotStatus() {
   // Calculate the total value of the jackpot and the total number of skins
   const totalJackpotValue: number = participants.reduce(
     (acc, participant) => acc + participant.totalValue,
-    0
+    0,
   );
   const totalSkins: number = participants.reduce(
     (acc, participant) => acc + participant.skinCount,
-    0
+    0,
   );
 
   return (
@@ -213,7 +212,9 @@ export default function JackpotStatus() {
               </p>
             </div>
             <div className="flex items-center">
-              <p className="text-lg md:text-xl font-bold text-white">Total Skins:</p>
+              <p className="text-lg md:text-xl font-bold text-white">
+                Total Skins:
+              </p>
               <p className="text-2xl md:text-3xl font-extrabold text-yellow-400 ml-2">
                 {totalSkins}
               </p>
@@ -248,7 +249,10 @@ export default function JackpotStatus() {
       <div className="w-full">
         <div className="w-[95%] flex flex-wrap justify-center md:justify-start gap-6 mt-7 mx-auto">
           {participants.map((participant) => (
-            <ParticipantCard key={participant.username} participant={participant} />
+            <ParticipantCard
+              key={participant.username}
+              participant={participant}
+            />
           ))}
         </div>
         <p className="text-gray-300 text-[10px] md:text-sm text-center mt-10">
@@ -280,66 +284,67 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant }) => {
 
   return (
     <>
-    <div className="w-full max-w-sm bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl shadow-lg overflow-hidden hover:scale-105 transition-transform duration-300">
-      <div className="flex items-center p-4">
-        <Image
-          width={60}
-          height={60}
-          className="rounded-full border-2 border-gray-600"
-          src={participant.img}
-          alt={participant.username}
-        />
-        <div className="ml-4">
-          <h3 className="text-xl font-semibold text-white">
-            {participant.username}
-          </h3>
-          <p className="text-sm text-gray-300">
-            {participant.skinCount} {participant.skinCount === 1 ? "Skin" : "Skins"} | ${participant.totalValue.toFixed(2)}
-          </p>
+      <div className="w-full max-w-sm bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl shadow-lg overflow-hidden hover:scale-105 transition-transform duration-300">
+        <div className="flex items-center p-4">
+          <Image
+            width={60}
+            height={60}
+            className="rounded-full border-2 border-gray-600"
+            src={participant.img}
+            alt={participant.username}
+          />
+          <div className="ml-4">
+            <h3 className="text-xl font-semibold text-white">
+              {participant.username}
+            </h3>
+            <p className="text-sm text-gray-300">
+              {participant.skinCount}{" "}
+              {participant.skinCount === 1 ? "Skin" : "Skins"} | $
+              {participant.totalValue.toFixed(2)}
+            </p>
+          </div>
         </div>
+
+        {/* Divider */}
+        <hr className="border-gray-600" />
+
+        {/* Invested Skins */}
+        <div className="p-4">
+          <p className="text-sm font-medium text-yellow-400 mb-2">
+            Invested Skins:
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {participant.items.slice(0, 4).map((item) => (
+              <ItemBadge key={item.assetId} item={item} />
+            ))}
+            {participant.items.length > 4 && (
+              <div
+                className="flex items-center justify-center col-span-2 p-2 bg-gray-600 rounded-md cursor-pointer hover:bg-gray-500 transition-colors duration-200"
+                onClick={handleShowAll}
+                title="View all skins"
+              >
+                <span className="text-xs text-gray-300">
+                  +{participant.items.length - 4} more
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modal to show all skins */}
       </div>
-
-      {/* Divider */}
-      <hr className="border-gray-600" />
-
-      {/* Invested Skins */}
-      <div className="p-4">
-        <p className="text-sm font-medium text-yellow-400 mb-2">
-          Invested Skins:
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {participant.items.slice(0, 4).map((item) => (
+      <Modal
+        isOpen={showAll}
+        onClose={handleClose}
+        title={`${participant.username}'s Skins`}
+      >
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 overflow-y-auto max-h-96">
+          {participant.items.map((item) => (
             <ItemBadge key={item.assetId} item={item} />
           ))}
-          {participant.items.length > 4 && (
-            <div
-              className="flex items-center justify-center col-span-2 p-2 bg-gray-600 rounded-md cursor-pointer hover:bg-gray-500 transition-colors duration-200"
-              onClick={handleShowAll}
-              title="View all skins"
-            >
-              <span className="text-xs text-gray-300">
-                +{participant.items.length - 4} more
-              </span>
-            </div>
-          )}
         </div>
-      </div>
-
-      {/* Modal to show all skins */}
-     
-    </div>
-     <Modal
-     isOpen={showAll}
-     onClose={handleClose}
-     title={`${participant.username}'s Skins`}
-   >
-     <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 overflow-y-auto max-h-96">
-       {participant.items.map((item) => (
-         <ItemBadge key={item.assetId} item={item} />
-       ))}
-     </div>
-   </Modal>
-   </>
+      </Modal>
+    </>
   );
 };
 
@@ -369,21 +374,11 @@ const ItemBadge: React.FC<ItemBadgeProps> = ({ item }) => {
         <span className="text-xs text-white font-medium truncate w-24">
           {item.name}
         </span>
-        <span className="text-xs text-gray-300">
-          {item.price}
-        </span>
+        <span className="text-xs text-gray-300">{item.price}</span>
       </div>
     </div>
   );
 };
-
-
-
-
-
-
-
-
 
 // "use client";
 
@@ -480,7 +475,7 @@ const ItemBadge: React.FC<ItemBadgeProps> = ({ item }) => {
 //             return acc + price;
 //           }, 0);
 //           console.log( participant.items);
-          
+
 //           return {
 //             username: user.username || "Unknown",
 //             items: participant.items,
@@ -510,7 +505,7 @@ const ItemBadge: React.FC<ItemBadgeProps> = ({ item }) => {
 //           return acc + price;
 //         }, 0);
 //         console.log( participant.items);
-        
+
 //         return {
 //           username: user.username || "Unknown",
 //           items: participant.items,
@@ -653,22 +648,6 @@ const ItemBadge: React.FC<ItemBadgeProps> = ({ item }) => {
 //     </>
 //   );
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // // pages/JackpotStatus.js
 

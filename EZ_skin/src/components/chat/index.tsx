@@ -1,9 +1,9 @@
 // Chat.tsx
 
-import { useEffect, useState, useRef, FormEvent } from 'react';
-import { io, Socket } from 'socket.io-client';
-import Image from 'next/image';
-import img from '@/assets/images/icon.jpg'; // Update the path if necessary
+import { useEffect, useState, useRef, FormEvent } from "react";
+import { io, Socket } from "socket.io-client";
+import Image from "next/image";
+import img from "@/assets/images/icon.jpg"; // Update the path if necessary
 
 // Define the structure of a chat message
 interface Message {
@@ -21,20 +21,19 @@ interface Avatar {
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState<string>('');
+  const [inputMessage, setInputMessage] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const socket = useRef<Socket | null>(null);
 
   const [username, setUsername] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<Avatar | null>(null);
-  
 
   // Extract URL parameters on the client-side
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-      const usernameFromURL = urlParams.get('username');
-      const avatarString = urlParams.get('avatar');
+      const usernameFromURL = urlParams.get("username");
+      const avatarString = urlParams.get("avatar");
 
       setUsername(usernameFromURL);
 
@@ -43,7 +42,7 @@ const Chat: React.FC = () => {
           const parsedAvatar: Avatar = JSON.parse(avatarString);
           setAvatar(parsedAvatar);
         } catch (error) {
-          console.error('Failed to parse avatar:', error);
+          console.error("Failed to parse avatar:", error);
           setAvatar(null);
         }
       }
@@ -55,16 +54,17 @@ const Chat: React.FC = () => {
     if (socket.current) return; // Prevent multiple connections
 
     // Replace with your actual Socket.IO server URL or use environment variables
-    const socketURL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000/chat';
+    const socketURL =
+      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000/chat";
     socket.current = io(socketURL);
 
     // Listen for initial messages
-    socket.current.on('initialMessages', (msgs: Message[]) => {
+    socket.current.on("initialMessages", (msgs: Message[]) => {
       setMessages(msgs);
     });
 
     // Listen for incoming chat messages
-    socket.current.on('chatMessage', (msg: Message) => {
+    socket.current.on("chatMessage", (msg: Message) => {
       setMessages((prevMessages) => [...prevMessages, msg]);
     });
 
@@ -77,17 +77,17 @@ const Chat: React.FC = () => {
 
   // Scroll to the latest message when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Handle sending messages
   const sendMessage = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (inputMessage.trim() === '') return;
+    if (inputMessage.trim() === "") return;
 
     if (!username || !avatar) {
-      alert('Please log in to send messages.');
+      alert("Please log in to send messages.");
       return;
     }
 
@@ -99,13 +99,13 @@ const Chat: React.FC = () => {
     };
 
     // Emit the message to the server
-    socket.current?.emit('chatMessage', message);
+    socket.current?.emit("chatMessage", message);
 
     // Remove the optimistic update
     // setMessages((prevMessages) => [...prevMessages, message]);
 
     // Clear the input field
-    setInputMessage('');
+    setInputMessage("");
   };
 
   return (
@@ -126,7 +126,10 @@ const Chat: React.FC = () => {
             />
             <div className="flex flex-col">
               <p className="text-[#9b9ba1] text-[12px]">
-                <span className="font-semibold text-white">{msg.username}:</span> {msg.text}
+                <span className="font-semibold text-white">
+                  {msg.username}:
+                </span>{" "}
+                {msg.text}
               </p>
               {/* Optional: Display timestamp */}
               {/* <p className="text-[#6b6b6b] text-[10px]">
@@ -154,12 +157,6 @@ const Chat: React.FC = () => {
 
 export default Chat;
 
-
-
-
-
-
-
 // // Chat.js
 
 // import { useEffect, useState, useRef } from 'react';
@@ -177,7 +174,6 @@ export default Chat;
 //   const avatar = JSON.parse(avatarString);
 
 //   // console.log(avatar.small);
-  
 
 //   // Initialize Socket.IO client
 //   const socket = useRef();
@@ -275,6 +271,3 @@ export default Chat;
 //     </div>
 //   );
 // }
-
-
-

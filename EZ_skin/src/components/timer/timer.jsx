@@ -1,18 +1,18 @@
 // components/TimerBox.js
 
-import { useState, useEffect } from 'react';
-import openSocket from 'socket.io-client';
+import { useState, useEffect } from "react";
+import openSocket from "socket.io-client";
 
 const TimerBox = () => {
   const [timeLeft, setTimeLeft] = useState(120);
   const SOCKET_SERVER_URL =
-  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
   useEffect(() => {
     const socket = openSocket(`${SOCKET_SERVER_URL}`);
 
     // Listen for timer updates from the server
-    socket.on('timer', (data) => {
+    socket.on("timer", (data) => {
       setTimeLeft(data.timeLeft);
     });
 
@@ -24,9 +24,7 @@ const TimerBox = () => {
 
   return (
     <div className="timer-container mt-5 ml-8">
-      <div className="timer-box">
-        {timeLeft}
-      </div>
+      <div className="timer-box">{timeLeft}</div>
       <style jsx>{`
         .timer-container {
           display: flex;
@@ -37,7 +35,11 @@ const TimerBox = () => {
         .timer-box {
           font-size: 3rem;
           font-weight: bold;
-          background: linear-gradient(90deg, rgba(255, 87, 34, 1) 0%, rgba(255, 193, 7, 1) 100%);
+          background: linear-gradient(
+            90deg,
+            rgba(255, 87, 34, 1) 0%,
+            rgba(255, 193, 7, 1) 100%
+          );
           padding: 20px;
           width: 120px;
           height: 120px;

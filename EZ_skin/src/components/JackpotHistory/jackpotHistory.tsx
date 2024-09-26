@@ -49,9 +49,11 @@ const getBorderColor = (totalValue: number): string => {
   return "#F3BA2A"; // Yellow for low value
 };
 
-
 // JackpotCard Component
-const JackpotCard: React.FC<{ jackpot: Jackpot; onClick: (jackpot: Jackpot) => void }> = ({ jackpot, onClick }) => {
+const JackpotCard: React.FC<{
+  jackpot: Jackpot;
+  onClick: (jackpot: Jackpot) => void;
+}> = ({ jackpot, onClick }) => {
   return (
     <div
       className="mt-10  mb-10 cursor-pointer transition-colors duration-200 rounded-md"
@@ -61,26 +63,34 @@ const JackpotCard: React.FC<{ jackpot: Jackpot; onClick: (jackpot: Jackpot) => v
       <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 relative flex justify-center items-center w-full h-20 mt-7 rounded-md ">
         <div className="flex absolute -top-4 w-full justify-between px-4">
           <div className="bg-black bg-opacity-70 rounded-md text-[10px] md:text-xs text-white px-2 py-1">
-            Commission (%): <span className="text-yellow-300">{jackpot.commissionPercentage}%</span>
+            Commission (%):{" "}
+            <span className="text-yellow-300">
+              {jackpot.commissionPercentage}%
+            </span>
           </div>
           <div className="bg-black bg-opacity-70 rounded-md text-[10px] md:text-xs text-white px-2 py-1">
-            Status: <span className="text-yellow-300">{jackpot.status.replace("_", " ").toUpperCase()}</span>
+            Status:{" "}
+            <span className="text-yellow-300">
+              {jackpot.status.replace("_", " ").toUpperCase()}
+            </span>
           </div>
         </div>
         <div className="bg-gray-900 bg-opacity-80 text-sm md:text-base text-white px-10 py-2 rounded-lg shadow-lg flex">
-            <Image
-                    width={40}
-                    height={40}
-                    className="rounded-full mr-4"
-                    src={jackpot.winner?.avatar?.small || "/default-avatar.png"} // Ensure you have a default avatar image in public directory
-                    alt={jackpot.winner?.username || "Unknown User"}
-                />
-            <div className="mt-2">
-                    {jackpot.winner?.username || "No Winner"}{" "}
-                <span className="text-yellow-300">|</span> won the pot valued at{" "}
-                <span className="text-yellow-300">${jackpot.totalValue.toFixed(2)}</span> 
-                {/* <span className="text-yellow-300">{jackpot.commissionPercentage}%</span> */}
-            </div>
+          <Image
+            width={40}
+            height={40}
+            className="rounded-full mr-4"
+            src={jackpot.winner?.avatar?.small || "/default-avatar.png"} // Ensure you have a default avatar image in public directory
+            alt={jackpot.winner?.username || "Unknown User"}
+          />
+          <div className="mt-2">
+            {jackpot.winner?.username || "No Winner"}{" "}
+            <span className="text-yellow-300">|</span> won the pot valued at{" "}
+            <span className="text-yellow-300">
+              ${jackpot.totalValue.toFixed(2)}
+            </span>
+            {/* <span className="text-yellow-300">{jackpot.commissionPercentage}%</span> */}
+          </div>
         </div>
       </div>
 
@@ -101,13 +111,15 @@ const JackpotHistory: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedJackpot, setSelectedJackpot] = useState<Jackpot | null>(null);
   const SOCKET_SERVER_URL =
-  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
   // Fetch completed jackpots from the backend
   useEffect(() => {
     const fetchCompletedJackpots = async () => {
       try {
-        const response = await axios.get<Jackpot[]>(`${SOCKET_SERVER_URL}/jackpotSystem/history`); // Adjust the endpoint if necessary
+        const response = await axios.get<Jackpot[]>(
+          `${SOCKET_SERVER_URL}/jackpotSystem/history`,
+        ); // Adjust the endpoint if necessary
         console.log(response.data);
 
         setJackpots(response.data);
@@ -141,7 +153,9 @@ const JackpotHistory: React.FC = () => {
   }
 
   if (jackpots.length === 0) {
-    return <p className="text-center text-gray-500">No completed jackpots found.</p>;
+    return (
+      <p className="text-center text-gray-500">No completed jackpots found.</p>
+    );
   }
 
   return (
@@ -151,12 +165,16 @@ const JackpotHistory: React.FC = () => {
           Jackpot History
         </h1>
         <h3 className=" font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-600 to-yellow-500">
-            (Last 24 hours)
+          (Last 24 hours)
         </h3>
       </div>
       <div className="overflow-auto h-96">
         {jackpots.map((jackpot) => (
-            <JackpotCard key={jackpot._id} jackpot={jackpot} onClick={openModal} />
+          <JackpotCard
+            key={jackpot._id}
+            jackpot={jackpot}
+            onClick={openModal}
+          />
         ))}
         {/* {jackpots.map((jackpot) => (
             <JackpotCard key={jackpot._id} jackpot={jackpot} onClick={openModal} />
@@ -165,7 +183,7 @@ const JackpotHistory: React.FC = () => {
       {/* Modal for Jackpot Details */}
       <Transition appear show={selectedJackpot !== null} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={closeModal}>
-            <Transition.Child
+          <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0"
@@ -173,14 +191,14 @@ const JackpotHistory: React.FC = () => {
             leave="ease-in duration-200"
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
-            >
+          >
             {/* Updated Overlay */}
             <div className="fixed inset-0 bg-gray-700 bg-opacity-50" />
-            </Transition.Child>
+          </Transition.Child>
 
-            <div className="fixed inset-0 overflow-y-auto">
+          <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
-                <Transition.Child
+              <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
                 enterFrom="opacity-0 scale-95"
@@ -188,81 +206,117 @@ const JackpotHistory: React.FC = () => {
                 leave="ease-in duration-200"
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
-                >
+              >
                 {/* Updated Dialog Panel */}
                 <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                    {/* Close Button */}
-                    <div className="flex justify-end">
+                  {/* Close Button */}
+                  <div className="flex justify-end">
                     <button
-                        type="button"
-                        className="text-gray-300 hover:text-gray-100 focus:outline-none"
-                        onClick={closeModal}
+                      type="button"
+                      className="text-gray-300 hover:text-gray-100 focus:outline-none"
+                      onClick={closeModal}
                     >
-                        <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                      <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                     </button>
-                    </div>
-                    {selectedJackpot && (
+                  </div>
+                  {selectedJackpot && (
                     <div>
-                        {/* Dialog Title */}
-                        <Dialog.Title
+                      {/* Dialog Title */}
+                      <Dialog.Title
                         as="h3"
                         className="text-2xl font-bold leading-6 text-gray-100 mb-4"
-                        >
+                      >
                         Jackpot Details
-                        </Dialog.Title>
-                        {/* Jackpot Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      </Dialog.Title>
+                      {/* Jackpot Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                            <p className="text-gray-300"><strong>Status:</strong> {selectedJackpot.status.replace("_", " ").toUpperCase()}</p>
-                            <p className="text-gray-300"><strong>Total Value:</strong> ${selectedJackpot.totalValue.toFixed(2)}</p>
-                            <p className="text-gray-300"><strong>Winner:</strong> {selectedJackpot.winner?.username || "No Winner"}</p>
+                          <p className="text-gray-300">
+                            <strong>Status:</strong>{" "}
+                            {selectedJackpot.status
+                              .replace("_", " ")
+                              .toUpperCase()}
+                          </p>
+                          <p className="text-gray-300">
+                            <strong>Total Value:</strong> $
+                            {selectedJackpot.totalValue.toFixed(2)}
+                          </p>
+                          <p className="text-gray-300">
+                            <strong>Winner:</strong>{" "}
+                            {selectedJackpot.winner?.username || "No Winner"}
+                          </p>
                         </div>
                         <div>
-                            <p className="text-gray-300"><strong>Round Hash:</strong> {selectedJackpot._id}</p>
-                            <p className="text-gray-300"><strong>Created At:</strong> {new Date(selectedJackpot.createdAt).toLocaleString()}</p>
+                          <p className="text-gray-300">
+                            <strong>Round Hash:</strong> {selectedJackpot._id}
+                          </p>
+                          <p className="text-gray-300">
+                            <strong>Created At:</strong>{" "}
+                            {new Date(
+                              selectedJackpot.createdAt,
+                            ).toLocaleString()}
+                          </p>
                         </div>
-                        </div>
-                        {/* Participants Section */}
-                        <div>
-                        <h4 className="text-xl font-semibold text-gray-200 mb-2">Participants</h4>
+                      </div>
+                      {/* Participants Section */}
+                      <div>
+                        <h4 className="text-xl font-semibold text-gray-200 mb-2">
+                          Participants
+                        </h4>
                         {selectedJackpot.participants.length === 0 ? (
-                            <p className="text-gray-400">No participants.</p>
+                          <p className="text-gray-400">No participants.</p>
                         ) : (
-                            <div className="space-y-4">
-                            {selectedJackpot.participants.map((participant, idx) => (
-                                <div key={idx} className="flex items-center gap-4 p-4 border border-gray-600 rounded-lg shadow-sm bg-gray-700">
-                                <Image
+                          <div className="space-y-4">
+                            {selectedJackpot.participants.map(
+                              (participant, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-4 p-4 border border-gray-600 rounded-lg shadow-sm bg-gray-700"
+                                >
+                                  <Image
                                     width={60}
                                     height={60}
                                     className="rounded-full"
-                                    src={participant.user.avatar.small || "/default-avatar.png"}
-                                    alt={participant.user.username || "Unknown User"}
-                                />
-                                <div>
-                                    <p className="font-semibold text-lg text-gray-100">{participant.user.username || "Unknown User"}</p>
-                                    <p className="text-sm text-gray-400">Items Contributed: {participant.items.length}</p>
+                                    src={
+                                      participant.user.avatar.small ||
+                                      "/default-avatar.png"
+                                    }
+                                    alt={
+                                      participant.user.username ||
+                                      "Unknown User"
+                                    }
+                                  />
+                                  <div>
+                                    <p className="font-semibold text-lg text-gray-100">
+                                      {participant.user.username ||
+                                        "Unknown User"}
+                                    </p>
+                                    <p className="text-sm text-gray-400">
+                                      Items Contributed:{" "}
+                                      {participant.items.length}
+                                    </p>
                                     <ul className="list-disc list-inside mt-2 text-gray-300">
-                                    {participant.items.map((item) => (
+                                      {participant.items.map((item) => (
                                         <li key={item._id}>
-                                        {item.name} - ${item.price}
+                                          {item.name} - ${item.price}
                                         </li>
-                                    ))}
+                                      ))}
                                     </ul>
+                                  </div>
                                 </div>
-                                </div>
-                            ))}
-                            </div>
+                              ),
+                            )}
+                          </div>
                         )}
-                        </div>
+                      </div>
                     </div>
-                    )}
+                  )}
                 </Dialog.Panel>
-                </Transition.Child>
+              </Transition.Child>
             </div>
-            </div>
+          </div>
         </Dialog>
-    </Transition>
-
+      </Transition>
     </div>
   );
 };

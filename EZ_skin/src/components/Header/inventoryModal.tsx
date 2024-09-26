@@ -26,7 +26,7 @@ interface InventoryItem {
   iconUrl: string;
   name: string;
   price: string;
-  owner:string;
+  owner: string;
   _id: string;
 }
 
@@ -35,7 +35,7 @@ export default function InventoryModal() {
   const [selectedItems, setSelectedItems] = React.useState<InventoryItem[]>([]);
   // const router = useRouter();
   const SOCKET_SERVER_URL =
-  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
   const handleOpen = (event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event propagation
@@ -57,16 +57,20 @@ export default function InventoryModal() {
       setSelectedItems((prevItems) => [...prevItems, item]);
     }
   };
-  
+
   const handleJackpotDeposit = async () => {
     try {
-
-      const transformedItems = selectedItems.map(item => item._id);
-      const userId = selectedItems[0].owner
-      const response = await axios.post(`${SOCKET_SERVER_URL}/jackpotSystem/join`, { itemIds: transformedItems , userId:userId});
-
-    } catch (error : any) {
-      console.error('Jackpot Deposit Error:', error.response ? error.response.data : error.message);
+      const transformedItems = selectedItems.map((item) => item._id);
+      const userId = selectedItems[0].owner;
+      const response = await axios.post(
+        `${SOCKET_SERVER_URL}/jackpotSystem/join`,
+        { itemIds: transformedItems, userId: userId },
+      );
+    } catch (error: any) {
+      console.error(
+        "Jackpot Deposit Error:",
+        error.response ? error.response.data : error.message,
+      );
     }
   };
 
@@ -119,15 +123,26 @@ export default function InventoryModal() {
                 </div>
                 <div className="h-[90%] flex flex-col justify-between items-center">
                   <div className="flex flex-col gap-y-3 text-center text-white py-2">
-                    <h1 className="text-xl font-semibold my-2">Available Grub Bucks $0.00</h1>
+                    <h1 className="text-xl font-semibold my-2">
+                      Available Grub Bucks $0.00
+                    </h1>
                     <p className="text-lg font-normal">Selected $0.00</p>
                   </div>
                   <div className="mt-3 overflow-y-auto  w-full p-3">
                     <ul className="max-h-[270px] overflow-y-auto">
                       {selectedItems.map((item, index) => (
-                        <li key={item._id} className="flex items-center gap-x-2">
-                          <span className="text-green-1000 mr-1 ml-2">{index + 1}.</span>
-                          <img src={item.iconUrl} alt={item.name} className="w-10 h-10" />
+                        <li
+                          key={item._id}
+                          className="flex items-center gap-x-2"
+                        >
+                          <span className="text-green-1000 mr-1 ml-2">
+                            {index + 1}.
+                          </span>
+                          <img
+                            src={item.iconUrl}
+                            alt={item.name}
+                            className="w-10 h-10"
+                          />
                           <span className="text-white">{item.name}</span>
                           <span className="text-green-700">{item.price}</span>
                         </li>
@@ -135,8 +150,10 @@ export default function InventoryModal() {
                     </ul>
                   </div>
                   <div className="flex flex-col gap-y-1">
-                    <button className="w-96 h-10 flex justify-center items-center bg-white rounded-md font-medium"
-                    onClick={handleJackpotDeposit}>
+                    <button
+                      className="w-96 h-10 flex justify-center items-center bg-white rounded-md font-medium"
+                      onClick={handleJackpotDeposit}
+                    >
                       Jackpot Deposit
                     </button>
                     <button className="w-96 h-10 flex justify-center items-center bg-white rounded-md font-medium">
@@ -150,8 +167,20 @@ export default function InventoryModal() {
                   Shop
                 </div>
                 <div className="mt-3 h-10 text-center flex justify-center items-center gap-x-2">
-                  <Image src={HistoryIMG} alt="History Png" className="w-6 h-6" />
-                  <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width={25} height={25} viewBox="0 0 50 50" fill="white">
+                  <Image
+                    src={HistoryIMG}
+                    alt="History Png"
+                    className="w-6 h-6"
+                  />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    x="0px"
+                    y="0px"
+                    width={25}
+                    height={25}
+                    viewBox="0 0 50 50"
+                    fill="white"
+                  >
                     <path d="M 3 9 A 1.0001 1.0001 0 1 0 3 11 L 47 11 A 1.0001 1.0001 0 1 0 47 9 L 3 9 z M 3 24 A 1.0001 1.0001 0 1 0 3 26 L 47 26 A 1.0001 1.0001 0 1 0 47 24 L 3 24 z M 3 39 A 1.0001 1.0001 0 1 0 3 41 L 47 41 A 1.0001 1.0001 0 1 0 47 39 L 3 39 z" />
                   </svg>
                   <input
@@ -160,7 +189,10 @@ export default function InventoryModal() {
                     placeholder="Search Inventory"
                   />
                 </div>
-                <InventoryPage onSelectItem={handleItemSelection} rewardLimitReached={selectedItems.length >= 20} />
+                <InventoryPage
+                  onSelectItem={handleItemSelection}
+                  rewardLimitReached={selectedItems.length >= 20}
+                />
               </div>
             </div>
           </div>

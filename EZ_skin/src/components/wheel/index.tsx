@@ -124,7 +124,7 @@ const HorizontalWheel: React.FC<HorizontalWheelProps> = ({
   const SPIN_DURATION = 5; // Duration in seconds
   const NUM_SPINS = 3; // Number of spins
   console.log(winningParticipant);
-  
+
   // Calculate total value
   const totalValue = participants.reduce((acc, p) => acc + p.totalValue, 0);
 
@@ -224,9 +224,6 @@ const HorizontalWheel: React.FC<HorizontalWheelProps> = ({
 
 export default HorizontalWheel;
 
-
-
-
 // import { motion, useAnimation } from "framer-motion";
 // import { useEffect, useState } from "react";
 // import styled from "styled-components";
@@ -316,7 +313,6 @@ export default HorizontalWheel;
 //   // Generate wheel items based on participant contributions
 //   console.log(participants);
 //   console.log("win",winningParticipant);
-  
 
 //   let wheelItems = participants.flatMap((participant) => {
 //     const scaledSlots = Math.round((participant.totalValue / totalValue) * 100);
@@ -406,9 +402,3 @@ export default HorizontalWheel;
 // };
 
 // export default HorizontalWheel;
-
-
-
-
-
-

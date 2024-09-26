@@ -9,7 +9,6 @@ import JackpotHistory from "../components/JackpotHistory/jackpotHistory"; // Upd
 import img from "@/assets/images/icon.jpg";
 import Image from "next/image";
 
-
 export default function HomePage() {
   return (
     <>
@@ -57,7 +56,7 @@ export default function HomePage() {
 
         {/* Main Content */}
         <div className="w-full overflow-y-auto h-[95vh] md:h-[90vh] md:w-[80%]">
-        <div className="w-[90%] mt-8 mx-auto flex gap-3 overflow-x-auto">
+          <div className="w-[90%] mt-8 mx-auto flex gap-3 overflow-x-auto">
             <div className="relative flex items-center justify-center min-w-[150px] w-[150px] border-b-[#D2655E] border-b-4 border-[1px] border-[#9b9ba1] h-[100px] bg-[#2C2C2E]">
               <Image
                 alt="photo"
