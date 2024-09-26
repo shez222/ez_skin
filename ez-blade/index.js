@@ -15,7 +15,7 @@ const Message = require('./models/messageSchema'); // Import the Message model
 const { getInventory } = require('./utils/getInventory');
 const jackpotRoutes = require('./routes/jackpotRoutes');
 const Jackpot = require('./models/jackpotSchema');
-const front_url = 'http://localhost:3000'
+const front_url = 'https://ez-skin-f.vercel.app'
 const back_url = 'https://ez-skin.vercel.app'
 // Initialize the app
 const app = express();
