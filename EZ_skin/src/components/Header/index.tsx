@@ -42,11 +42,11 @@ export default function Example() {
   };
   return (
     <header className="bg-[#3D3A40]">
-      <BasicModal
+      {/* <BasicModal
         handleOpen={handleOpen}
         open={open}
         handleClose={handleClose}
-      />
+      /> */}
       <nav
         className="mx-auto flex w-full items-center justify-between px-5 py-0 lg:px-8"
         aria-label="Global"
