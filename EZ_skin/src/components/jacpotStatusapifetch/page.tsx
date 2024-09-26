@@ -94,6 +94,8 @@ export default function JackpotStatus() {
 
   useEffect(() => {
     // Initialize Socket.IO client
+    console.log(SOCKET_SERVER_URL);
+    
     const socket: Socket = io(SOCKET_SERVER_URL);
 
     // Fetch initial jackpot data

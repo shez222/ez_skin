@@ -15,7 +15,8 @@ const Message = require('./models/messageSchema'); // Import the Message model
 const { getInventory } = require('./utils/getInventory');
 const jackpotRoutes = require('./routes/jackpotRoutes');
 const Jackpot = require('./models/jackpotSchema');
-
+const front_url = 'http://localhost:3000'
+const back_url = 'https://ez-skin.vercel.app'
 // Initialize the app
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,7 +25,7 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(
   cors({
-    origin: 'http://localhost:3000',
+    origin: `${front_url}`,
     methods: ['GET', 'POST'],
     credentials: true,
   })
@@ -54,9 +55,9 @@ passport.deserializeUser((obj, done) => {
 passport.use(
   new SteamStrategy(
     {
-      returnURL: 'http://localhost:5000/auth/steam/return',
-      // returnURL: 'http://localhost:3000',
-      realm: 'http://localhost:5000/',
+      returnURL: `${back_url}/auth/steam/return`,
+      // returnURL: '`${front_url}`',
+      realm: `${back_url}/`,
       apiKey: process.env.STEAM_API_KEY,
     },
     (identifier, profile, done) => {
@@ -72,7 +73,7 @@ passport.use(
 const http = require('http').Server(app);
 const io = require('./socket').init(http, {
   cors: {
-    origin: 'http://localhost:3000', // Allow only your client application's origin
+    origin: `${front_url}`, // Allow only your client application's origin
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'], // Allowable methods
     credentials: true, // Optional: if you need cookies or authorization headers
   },
@@ -209,9 +210,7 @@ app.get(
       }
 
       // Redirect to frontend with user info
-      const redirectUrl = `http://localhost:3000/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(
-        avatar
-      )}`;
+      const redirectUrl = `${front_url}/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(avatar)}`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Error saving user:', error);
@@ -247,7 +246,7 @@ app.get('/logout', (req, res, next) => { // Added 'next' to handle errors
       if (err) {
         return next(err);
       }
-      res.redirect('http://localhost:3000/'); // Redirect to your frontend after logout
+      res.redirect(`${front_url}/`); // Redirect to your frontend after logout
     });
   });
 });
@@ -385,7 +384,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 // app.use(express.json());
 // app.use(
 //   cors({
-//     origin: 'http://localhost:3000',
+//     origin: '`${front_url}`',
 //     methods: ['GET', 'POST'],
 //     credentials: true,
 //   })
@@ -415,8 +414,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 // passport.use(
 //   new SteamStrategy(
 //     {
-//       returnURL: 'http://localhost:5000/auth/steam/return',
-//       realm: 'http://localhost:5000/',
+//       returnURL: '`${back_url}`/auth/steam/return',
+//       realm: '`${back_url}`/',
 //       apiKey: process.env.STEAM_API_KEY,
 //     },
 //     (identifier, profile, done) => {
@@ -432,7 +431,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 // const http = require('http').Server(app);
 // const io = require('./socket').init(http, {
 //   cors: {
-//     origin: 'http://localhost:3000', // Allow only your client application's origin
+//     origin: '`${front_url}`', // Allow only your client application's origin
 //     methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'], // Allowable methods
 //     credentials: true, // Optional: if you need cookies or authorization headers
 //   },
@@ -571,7 +570,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 //       }
 
 //       // Redirect to frontend with user info
-//       const redirectUrl = `http://localhost:3000/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(
+//       const redirectUrl = ``${front_url}`/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(
 //         avatar
 //       )}`;
 //       res.redirect(redirectUrl);
@@ -609,7 +608,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 //       if (err) {
 //         return next(err);
 //       }
-//       res.redirect('http://localhost:3000/'); // Redirect to your frontend after logout
+//       res.redirect('`${front_url}`/'); // Redirect to your frontend after logout
 //     });
 //   });
 // });
@@ -669,7 +668,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 // // Middleware
 // app.use(express.json());
 // app.use(cors({
-//   origin: 'http://localhost:3000',
+//   origin: '`${front_url}`',
 //   methods: ['GET', 'POST'],
 //   credentials: true
 // }));
@@ -694,8 +693,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 // });
 
 // passport.use(new SteamStrategy({
-//     returnURL: 'http://localhost:5000/auth/steam/return',
-//     realm: 'http://localhost:5000/',
+//     returnURL: '`${back_url}`/auth/steam/return',
+//     realm: '`${back_url}`/',
 //     apiKey: process.env.STEAM_API_KEY
 //   },
 //   (identifier, profile, done) => {
@@ -935,7 +934,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 //       }
 
 //       // Redirect to frontend with user info
-//       const redirectUrl = `http://localhost:3000/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(avatar)}`;
+//       const redirectUrl = ``${front_url}`/?steamID64=${steamID64}&username=${username}&avatar=${JSON.stringify(avatar)}`;
 //       res.redirect(redirectUrl);
 //     } catch (error) {
 //       console.error('Error saving user:', error);
@@ -970,7 +969,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 //       if (err) {
 //         return next(err);
 //       }
-//       res.redirect('http://localhost:3000/'); // Redirect to your frontend after logout
+//       res.redirect('`${front_url}`/'); // Redirect to your frontend after logout
 //     });
 //   });
 // });
@@ -986,7 +985,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bilalshehroz420:00000
 //     }
 //     const CORS = {
 //       cors: {
-//           origin: "http://localhost:3000", // Allow only your client application's origin
+//           origin: "`${front_url}`", // Allow only your client application's origin
 //           methods: ["GET", "POST","PUT","PATCH","OPTIONS","DELETE"], // Allowable methods
 //           allowedHeaders: ["my-custom-header"], // Optional: specify headers
 //           credentials: true // Optional: if you need cookies or authorization headers

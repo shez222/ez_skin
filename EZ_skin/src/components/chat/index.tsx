@@ -27,6 +27,7 @@ const Chat: React.FC = () => {
 
   const [username, setUsername] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<Avatar | null>(null);
+  
 
   // Extract URL parameters on the client-side
   useEffect(() => {

@@ -7,6 +7,7 @@ import HistoryIMG from "@/assets/images/history.png";
 import MoneyImg from "@/assets/images/money-bag.png";
 import InventoryPage from "@/pages/inventory";
 import axios from "axios";
+import { Socket } from "dgram";
 
 const style = {
   position: "absolute" as "absolute",
@@ -33,6 +34,8 @@ export default function InventoryModal() {
   const [open, setOpen] = React.useState(false);
   const [selectedItems, setSelectedItems] = React.useState<InventoryItem[]>([]);
   // const router = useRouter();
+  const SOCKET_SERVER_URL =
+  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
   const handleOpen = (event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event propagation
@@ -60,7 +63,7 @@ export default function InventoryModal() {
 
       const transformedItems = selectedItems.map(item => item._id);
       const userId = selectedItems[0].owner
-      const response = await axios.post('http://localhost:5000/jackpotSystem/join', { itemIds: transformedItems , userId:userId});
+      const response = await axios.post(`${SOCKET_SERVER_URL}/jackpotSystem/join`, { itemIds: transformedItems , userId:userId});
 
     } catch (error : any) {
       console.error('Jackpot Deposit Error:', error.response ? error.response.data : error.message);

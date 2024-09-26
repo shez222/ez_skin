@@ -8,6 +8,8 @@ const SteamLogin: React.FC = () => {
   const [username, setUsername] = useState<string>("");
   const [steamID64, setSteamID64] = useState<string>("");
   const [avatar, setAvatar] = useState<string>("");
+  const SOCKET_SERVER_URL =
+  process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -56,7 +58,7 @@ const SteamLogin: React.FC = () => {
 
   const handleLogin = () => {
     try {
-      window.location.href = "http://localhost:5000/auth/steam"; // Correct URL with http
+      window.location.href = `${SOCKET_SERVER_URL}/auth/steam`; // Correct URL with http
     } catch (error) {
       console.error("Error logging in:", error);
     }

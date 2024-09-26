@@ -25,11 +25,13 @@ const InventoryPage: React.FC<{ onSelectItem: (item: InventoryItem) => void; rew
     const steamID64 = params.get("steamID64");
     const appId = params.get("appId") || "252490"; // Default appId if not provided
     const contextId = params.get("contextId") || "2"; // Default contextId if not provided
+    const SOCKET_SERVER_URL =
+    process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:5000";
 
     if (steamID64) {
       const fetchInventory = async () => {
         try {
-          const response = await fetch(`http://localhost:5000/api/inventory?steamID64=${steamID64}&appId=${appId}&contextId=${contextId}`);
+          const response = await fetch(`${SOCKET_SERVER_URL}/api/inventory?steamID64=${steamID64}&appId=${appId}&contextId=${contextId}`);
           if (!response.ok) {
             throw new Error("Failed to fetch inventory");
           }
