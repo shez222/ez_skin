@@ -1,7 +1,7 @@
 "use client";
 import { Dialog, DialogPanel, PopoverGroup } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import BasicModal from "../modal";
+import BasicModal from "../ModalInventory";
 import Image from "next/image";
 import LOGO from "@/assets/images/Logo.png";
 import SteamLogin from "@/app/Steam/page";

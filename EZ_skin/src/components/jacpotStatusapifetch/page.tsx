@@ -8,7 +8,7 @@ import axios, { AxiosResponse } from "axios";
 import Image from "next/image";
 import HorizontalWheel from "../wheel/index"; // Ensure correct path
 import TimerBox from "../timer/timer"; // Ensure correct path
-import Modal from "../Modal"; // Import the Modal component
+import Modal from "../ModalInventory"; // Import the Modal component
 
 // Define environment variable for Socket.IO server URL
 const SOCKET_SERVER_URL =

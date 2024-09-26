@@ -13,14 +13,12 @@ const getInventory = async (appid, steamid, contextid = 2, tradeable = false) =>
 
   try {
     // console.log("jhkdfjhkjshkjdhskjh",`https://steamcommunity.com/inventory/${steamid}/${appid}/${contextid}`);
-
-    const response = await axios.get(`https://steamcommunity.com/inventory/${steamid}/${appid}/${contextid}`);
+    const url = `https://steamcommunity.com/inventory/${steamid}/${appid}/${contextid}`
+    const response = await axios.get(url);
     // console.log(response);
     
     const body = response.data;
-    
-
-    
+    console.log(url);
 
     let items = body.descriptions;
     let assets = body.assets;
@@ -48,6 +46,8 @@ const getInventory = async (appid, steamid, contextid = 2, tradeable = false) =>
           // Find the corresponding price for the item from rust_market_items.json
           const marketItem = rustMarketItems.find(marketItem => marketItem.name === market_hash_name);
           groupedItems[market_hash_name].price = marketItem ? marketItem.price : '0 USD';
+          // console.log(groupedItems[market_hash_name]);
+          
         }
 
         groupedItems[market_hash_name].quantity += 1;
@@ -66,7 +66,7 @@ const getInventory = async (appid, steamid, contextid = 2, tradeable = false) =>
     if (tradeable) {
       data.items = data.items.filter(x => x.tradable === 1);
     }
-    // console.log(data);
+    console.log(data);
     
     return data;
   } catch (error) {

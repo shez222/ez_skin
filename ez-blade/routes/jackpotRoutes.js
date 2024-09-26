@@ -7,5 +7,7 @@ router.post('/join', jackpotController.joinJackpot);
 
 // Route to get the current jackpot status
 router.get('/status', jackpotController.getJackpotStatus);
+router.get('/history', jackpotController.getJackpotHistory);
+
 
 module.exports = router;

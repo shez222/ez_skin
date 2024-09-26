@@ -11,163 +11,6 @@
 // const SteamUser = require('steam-user');
 // const SteamTotp = require('steam-totp');
 
-// -----------------------------------main----------------------------------------------
-// const Jackpot = require('../models/jackpotSchema');
-// const Item = require('../models/itemSchema');
-// const User = require('../models/userSchema');
-// const io = require('../socket');
-// // const SteamTrade = require('steam-trade-api'); // Example Steam Trade API integration
-// // const User = require('./models/User'); // Ensure correct import of your User model
-
-// // Join the Jackpot
-// const joinJackpot = async (req, res) => {
-//   try {
-//     const { userId, itemIds } = req.body;
-
-//     // Validate user and items
-//     if (!userId || !itemIds || itemIds.length === 0) {
-//       return res.status(400).json({ error: 'User ID and item IDs are required' });
-//     }
-
-//     // Find or create the current jackpot (waiting or in-progress)
-//     let jackpot = await Jackpot.findOne({ status: { $in: ['in_progress', 'waiting'] } });
-//     if (!jackpot) {
-//       jackpot = new Jackpot({ status: 'waiting', totalValue: 0, participants: [] });
-//     }
-
-//     // Fetch the user and items
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ error: 'User not found' });
-
-//     const items = await Item.find({ _id: { $in: itemIds } });
-//     if (items.length === 0) return res.status(404).json({ error: 'No items found' });
-
-//     // Check if the user is already participating
-//     const existingParticipant = jackpot.participants.find(participant => participant.user.equals(user._id));
-
-//       // If user is not yet participating, add them with their items
-//       jackpot.participants.push({
-//         user: user._id,
-//         items: items.map(item => item._id)
-//       });
-
-//     // Calculate the total value of the items added to the jackpot
-//     const totalValue = items.reduce((acc, item) => {
-//       const itemValue = parseFloat(item.value); // Convert item value to a float
-//       if (!isNaN(itemValue)) {
-//         return acc + itemValue;
-//       }
-//       return acc; // Skip invalid item values
-//     }, 0);
-
-//     jackpot.totalValue += totalValue;
-
-//     // If there are 2 or more participants, move to 'in-progress'
-//     if (jackpot.participants.length >= 2 && jackpot.status === 'waiting') {
-//       jackpot.status = 'in_progress';
-//     }
-
-//     // Save the jackpot
-//     const updatedJackpot = await jackpot.save();
-//     io.getIO().emit('jackpots', {
-//       action: 'update',
-//       jackpot: updatedJackpot
-//     })
-
-//     res.json({ success: true, jackpot });
-//   } catch (error) {
-//     console.error('Error joining jackpot:', error);
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
-
-// // Get Jackpot Status
-// const getJackpotStatus = async (req, res) => {
-//   try {
-//     // Find a jackpot that is either 'in_progress' or 'waiting'
-//     let jackpot = await Jackpot.findOne({ status: { $in: ['in_progress', 'waiting'] } })
-//       .populate('participants.user')  // Populate participant user details
-//       .populate('participants.items') // Populate participant items
-//       .populate('winner');            // Populate winner details if available
-
-//     // If no jackpot is found, return a 404 error
-//     if (!jackpot) {
-//       return res.status(404).json({ error: 'No active jackpot found' });
-//     }
-
-//     // Respond with the jackpot data
-//     res.json(jackpot);
-//   } catch (error) {
-//     console.error('Error fetching jackpot status:', error);
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
-
-// // Complete the Jackpot
-// const completeJackpot = async (req, res) => {
-//   try {
-//     const { jackpotId } = req.body;
-
-//     const jackpot = await Jackpot.findById(jackpotId)
-//       .populate('participants.user')
-//       .populate('participants.items');
-      
-    
-//     if (!jackpot || jackpot.status !== 'in_progress') {
-//       return res.status(404).json({ error: 'Jackpot not found or already completed' });
-//     }
-
-//     const totalValue = jackpot.totalValue;
-//     let winner = null;
-
-//     // Calculate odds for each participant based on the value of their items
-//     const participantsWithOdds = jackpot.participants.map(participant => {
-//       const participantValue = participant.items.reduce((acc, item) => acc + item.value, 0);
-//       const odds = participantValue / totalValue;
-//       return { participant: participant.user, odds };
-//     });
-
-//     // Select a winner based on calculated odds
-//     const randomValue = Math.random();
-//     let cumulativeOdds = 0;
-//     for (const { participant, odds } of participantsWithOdds) {
-//       cumulativeOdds += odds;
-//       if (randomValue <= cumulativeOdds) {
-//         winner = participant;
-//         break;
-//       }
-//     }
-
-//     if (winner) {
-//       // Calculate commission and transfer items to the winner
-//       const commissionValue = (jackpot.totalValue * jackpot.commissionPercentage) / 100;
-//       const winnings = jackpot.totalValue - commissionValue;
-
-//       // Implement trade logic here (e.g., using Steam API)
-//       // await transferWinningsToWinner(winner, jackpot.items, winnings);
-
-//       // Mark the jackpot as completed
-//       jackpot.status = 'completed';
-//       jackpot.winner = winner._id;
-//       await jackpot.save();
-
-//       return res.json({ success: true, jackpot });
-//     }
-
-//   } catch (error) {
-//     console.error('Error completing jackpot:', error);
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
-// module.exports = {
-//   joinJackpot,
-//   getJackpotStatus,
-//   completeJackpot
-// };
-// controllers/jackpotController.js
 
 const Jackpot = require('../models/jackpotSchema');
 const Item = require('../models/itemSchema');
@@ -264,7 +107,7 @@ const getJackpotStatus = async (req, res) => {
       .populate('participants.user')  // Populate participant user details
       .populate('participants.items') // Populate participant items
       .populate('winner');            // Populate winner details if available
-
+    
     // If no jackpot is found, return a 404 error
     if (!jackpot) {
       return res.status(404).json({ error: 'No active jackpot found' });
@@ -277,6 +120,55 @@ const getJackpotStatus = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// controllers/jackpotController.js
+
+
+const getJackpotHistory = async (req, res) => {
+  try {
+    // Calculate the date and time for 24 hours ago from now
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Fetch all jackpots with status 'completed' and created within the last 24 hours
+    const jackpots = await Jackpot.find({
+      status: 'completed',
+      createdAt: { $gte: twentyFourHoursAgo }, // Filter for jackpots created in the last 24 hours
+    })
+      .populate({
+        path: 'participants.user', // Populate the 'user' field within 'participants'
+        select: 'username steamId avatar', // Select specific fields (optional)
+      })
+      .populate({
+        path: 'participants.items', // Populate the 'items' array within 'participants'
+        select: 'name price iconUrl', // Select specific fields (optional)
+      })
+      .populate({
+        path: 'winner', // Populate the 'winner' field
+        select: 'username avatar', // Select specific fields (optional)
+      });
+
+    // Check if any jackpots are found
+    if (!jackpots || jackpots.length === 0) {
+      return res.status(404).json({ error: 'No completed jackpots found in the last 24 hours' });
+    }
+
+    // Optional: Filter out participants with null users (if any)
+    const filteredJackpots = jackpots.map(jackpot => {
+      const validParticipants = jackpot.participants.filter(participant => participant.user !== null);
+      return { ...jackpot.toObject(), participants: validParticipants };
+    });
+
+    // Respond with the filtered jackpots data
+    res.status(200).json(filteredJackpots);
+  } catch (error) {
+    console.error('Error fetching jackpot history:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+module.exports = {
+  getJackpotHistory
+};
 
 // Complete the Jackpot (Not needed as the timer will end the round)
 const completeJackpot = async (req, res) => {
@@ -286,7 +178,7 @@ const completeJackpot = async (req, res) => {
 module.exports = {
   joinJackpot,
   getJackpotStatus,
-  completeJackpot
+  getJackpotHistory
 };
 
 

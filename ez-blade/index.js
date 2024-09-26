@@ -84,7 +84,6 @@ const jackpotManager = require('./jackpotManager');
 // Use jackpot routes
 app.use('/jackpotSystem', jackpotRoutes);
 
-// Inventory Route
 app.get('/api/inventory', async (req, res) => {
   try {
     const steamID64 = req.query.steamID64;
@@ -97,6 +96,9 @@ app.get('/api/inventory', async (req, res) => {
 
     // Fetch the inventory
     const inventory = await getInventory(appId, steamID64, contextId);
+    if (!inventory || !inventory.items || inventory.items.length === 0) {
+      return res.status(404).json({ error: 'No inventory found.' });
+    }
 
     // Find the user in the database
     const user = await User.findOne({ steamId: steamID64 });
@@ -104,69 +106,65 @@ app.get('/api/inventory', async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    // Fetch items in the current jackpot
-    const jackpot = await Jackpot.findOne({ status: { $in: ['in_progress', 'waiting'] } }).populate('participants.items');
-    const jackpotItems = jackpot ? jackpot.participants.flatMap(participant => participant.items) : [];
+    // Gather all assetIds to check for existing items in one query
+    const allAssetIds = inventory.items.flatMap(item => item.assetIds);
+    
+    // Fetch all existing items in one query
+    const existingItems = await Item.find({
+      owner: user._id,
+      appId,
+      contextId,
+      assetId: { $in: allAssetIds }
+    });
 
-    // Extract asset IDs from jackpot items
-    const jackpotAssetIds = jackpotItems.map(item => item.assetId.toString());
+    // Create a Set of assetIds that already exist
+    const existingAssetIds = new Set(existingItems.map(item => item.assetId));
 
-    // Filter out items that are in the jackpot from the inventory
-    const filteredInventoryItems = inventory.items.filter(item => !jackpotAssetIds.includes(item.assetIds[0].toString()));
+    // Prepare an array for new items to insert
+    const newItems = [];
+    const newInventoryItemIds = [];
 
-    // Save each item in the filtered inventory to the database
-    const itemPromises = filteredInventoryItems.map(async (item) => {
-      try {
-        // Extract the numeric part from the price string and convert it to a number
-        const priceString = item.price;
-        const priceMatch = priceString.match(/\d+(\.\d+)?/);
-        const price = priceMatch ? parseFloat(priceMatch[0]) : 0;
+    // Process each inventory item
+    inventory.items.forEach(item => {
+      // Extract the numeric part from the price string
+      const priceString = item.price;
+      const priceMatch = priceString.match(/\d+(\.\d+)?/);
+      const price = priceMatch ? parseFloat(priceMatch[0]) : 0;
 
-        // Check if any of the asset IDs already exists in the database
-        const existingItem = await Item.findOne({
-          owner: user._id,
-          appId: appId,
-          contextId: contextId,
-          assetId: { $in: item.assetIds }
-        });
-
-        if (existingItem) {
-          // Item already exists in the inventory, update if needed
-          return existingItem;
-        }
-
-        // Create a new item entry for each asset ID
-        const newItemPromises = item.assetIds.map(async (assetId) => {
-          const newItem = new Item({
+      // For each assetId, check if it already exists in the database
+      item.assetIds.forEach(assetId => {
+        if (!existingAssetIds.has(assetId)) {
+          // If the item doesn't exist, prepare it for insertion
+          const newItem = {
             name: item.market_hash_name,
             iconUrl: item.icon_url,
             price: `${price} USD`,  // Save the numeric value
             owner: user._id,
-            assetId: assetId,
-            appId: appId,
-            contextId: contextId,
-          });
+            assetId,
+            appId,
+            contextId
+          };
 
-          const savedItem = await newItem.save();
-          user.inventory.push(savedItem._id); // Add item reference to user's inventory
-          return savedItem;
-        });
-
-        return Promise.all(newItemPromises);
-
-      } catch (itemError) {
-        throw itemError;
-      }
+          newItems.push(newItem);
+        }
+      });
     });
 
-    // Wait for all items to be saved
-    await Promise.all(itemPromises);
+    // Bulk insert new items if there are any
+    if (newItems.length > 0) {
+      const insertedItems = await Item.insertMany(newItems);
+      newInventoryItemIds.push(...insertedItems.map(item => item._id));
+    }
 
-    // Save the updated user with inventory references
-    await user.save();
+    // Add new items to the user's inventory and save user in one operation
+    if (newInventoryItemIds.length > 0) {
+      user.inventory.push(...newInventoryItemIds);
+      await user.save();
+    }
+
+    // Return the updated user's inventory
     const userInventory = await User.findOne({ steamId: steamID64 }).populate('inventory');
-
-    res.json({ items: userInventory.inventory, inv: filteredInventoryItems });
+    res.json({ items: userInventory.inventory });
 
   } catch (error) {
     console.error("Error in /api/inventory:", error);
