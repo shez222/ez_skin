@@ -1,8 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/FAQ/page": "app/FAQ/page.js",
-  "/Steam/page": "app/Steam/page.js",
   "/api/create-payment-intent/route": "app/api/create-payment-intent/route.js",
+  "/Steam/page": "app/Steam/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/jackpot/page": "app/jackpot/page.js",
   "/login/page": "app/login/page.js",
