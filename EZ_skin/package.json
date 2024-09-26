@@ -11,8 +11,7 @@
     "check-types": "tsc --pretty --noEmit",
     "check-format": "prettier --check .",
     "format": "prettier --write .",
-    "post-update": "echo \"codesandbox preview only, need an update\" && yarn upgrade --latest",
-    "prepare": "husky install"
+    "post-update": "echo \"codesandbox preview only, need an update\" && yarn upgrade --latest"
   },
   "proxy": "http://localhost:5000/",
   "dependencies": {
@@ -22,7 +21,7 @@
     "@emotion/styled": "^11.11.5",
     "@headlessui/react": "^2.1.8",
     "@heroicons/react": "^2.1.5",
-    "@mui/icons-material": "^6.1.1",
+    "@mui/icons-material": "^5.16.0",
     "@mui/material": "^5.16.0",
     "@stripe/react-stripe-js": "^2.7.3",
     "@stripe/stripe-js": "^4.1.0",
